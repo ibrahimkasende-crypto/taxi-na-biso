@@ -10,8 +10,8 @@
     "pnpm": "9.12.0"
   },
   "scripts": {
-    "build": "turbo run build --filter=@openride/web",
-    "start": "turbo run start --filter=@openride/web",
+    "build": "pnpm --filter @openride/web build",
+    "start": "pnpm --filter @openride/web start",
     "build:all": "turbo run build",
     "build:web": "turbo run build --filter=@openride/web",
     "build:admin": "turbo run build --filter=@openride/admin",
