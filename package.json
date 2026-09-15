@@ -4,14 +4,17 @@
   "private": true,
   "description": "Open-source ride-booking & dispatch platform for regional operators, co-ops, EV fleets, and community transport.",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@9.12.0",
+  "packageManager": "npm@10.8.2",
   "engines": {
-    "node": ">=20.11",
-    "pnpm": "9.12.0"
+    "node": ">=20.11"
   },
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
   "scripts": {
-    "build": "pnpm --filter @openride/web build",
-    "start": "pnpm --filter @openride/web start",
+    "build": "npm run build --workspace=@openride/web",
+    "start": "npm run start --workspace=@openride/web",
     "build:all": "turbo run build",
     "build:web": "turbo run build --filter=@openride/web",
     "build:admin": "turbo run build --filter=@openride/admin",

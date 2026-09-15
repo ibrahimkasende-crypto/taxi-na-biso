@@ -13,11 +13,11 @@
     "clean": "rm -rf .next dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
-    "@openride/api-client": "workspace:*",
-    "@openride/db": "workspace:*",
-    "@openride/domain": "workspace:*",
-    "@openride/realtime": "workspace:*",
-    "@openride/ui": "workspace:*",
+    "@openride/api-client": "file:../../packages/api-client",
+    "@openride/db": "file:../../packages/db",
+    "@openride/domain": "file:../../packages/domain",
+    "@openride/realtime": "file:../../packages/realtime",
+    "@openride/ui": "file:../../packages/ui",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.45.0",
     "lucide-react": "^1.46.0",
@@ -27,7 +27,7 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@openride/config": "workspace:*",
+    "@openride/config": "file:../../packages/config",
     "@types/node": "^20.14.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

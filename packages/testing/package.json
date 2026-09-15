@@ -17,12 +17,12 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
-    "@openride/db": "workspace:*",
-    "@openride/domain": "workspace:*",
+    "@openride/db": "file:../db",
+    "@openride/domain": "file:../domain",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
-    "@openride/config": "workspace:*",
+    "@openride/config": "file:../config",
     "typescript": "~5.9.2",
     "vitest": "^2.0.5"
   }

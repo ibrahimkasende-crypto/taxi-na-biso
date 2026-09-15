@@ -19,7 +19,7 @@
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
-    "@openride/config": "workspace:*",
+    "@openride/config": "file:../config",
     "typescript": "~5.9.2"
   }
 }

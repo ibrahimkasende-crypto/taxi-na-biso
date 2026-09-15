@@ -16,7 +16,7 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "devDependencies": {
-    "@openride/config": "workspace:*",
+    "@openride/config": "file:../config",
     "typescript": "~5.9.2"
   }
 }

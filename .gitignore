@@ -68,9 +68,6 @@ supabase/.branches/
 # The real project config lives in infra/supabase.
 /supabase/
 
-# This is a pnpm workspace — never commit an npm lockfile.
-package-lock.json
-
 # Editor
 .vscode/*
 !.vscode/extensions.json
