@@ -28,10 +28,14 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/admin/chauffeurs', destination: '/admin/drivers', permanent: false },
-      { source: '/admin/chauffeurs/:id', destination: '/admin/drivers/:id', permanent: false },
-      { source: '/admin/vehicules', destination: '/admin/vehicles', permanent: false },
-      { source: '/admin/paiements', destination: '/admin/payments', permanent: false },
+      { source: '/admin/drivers', destination: '/admin/chauffeurs', permanent: false },
+      { source: '/admin/drivers/:id', destination: '/admin/chauffeurs/:id', permanent: false },
+      { source: '/admin/vehicles', destination: '/admin/vehicules', permanent: false },
+      { source: '/admin/vehicles/:id', destination: '/admin/vehicules/:id', permanent: false },
+      { source: '/admin/paiements', destination: '/admin/revenus', permanent: false },
+      { source: '/admin/payments', destination: '/admin/revenus', permanent: false },
+      { source: '/admin/dispatch', destination: '/admin/courses', permanent: false },
+      { source: '/admin/fares', destination: '/admin/parametres', permanent: false },
     ];
   },
 };

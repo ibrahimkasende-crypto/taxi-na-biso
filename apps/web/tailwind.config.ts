@@ -5,6 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        taxi: '#F5C518',
+        navy: '#12151C',
         brand: { DEFAULT: '#F04A18', dark: '#D83E10' },
         ink: '#111827',
         muted: '#667085',

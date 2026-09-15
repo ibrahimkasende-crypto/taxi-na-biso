@@ -20,8 +20,12 @@ export const metadata: Metadata = {
   applicationName: brand.appName,
   manifest: '/manifest.json',
   icons: {
-    icon: '/branding/favicon.png',
-    apple: '/branding/icon-192.png',
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/branding/favicon.png', type: 'image/png' },
+    ],
+    apple: '/apple-icon.png',
+    shortcut: '/branding/favicon.png',
   },
   openGraph: {
     title: brand.appName,

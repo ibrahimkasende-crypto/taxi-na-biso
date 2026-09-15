@@ -4,9 +4,10 @@ import { Car, Crown, Gem, Mountain, Users, Sparkles } from 'lucide-react';
 
 import { Photo } from '@/components/Photo';
 import { Reveal } from '@/components/Reveal';
-import { fleetCategories, fleetShowcase, fleetCategoryById, WHATSAPP_DISPLAY, type FleetCategoryId } from '@/config/fleet';
+import { fleetShowcase, fleetCategoryById, WHATSAPP_DISPLAY, type FleetCategoryId } from '@/config/fleet';
 import { officialWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { getPublicEnv } from '@/lib/env';
+import { useLiveFleet } from '@/lib/use-live-fleet';
 
 const icons = {
   basic: Car,
@@ -29,6 +30,7 @@ function goReserve(categoryId?: FleetCategoryId) {
 }
 
 export function MarketingHome() {
+  const fleetCategories = useLiveFleet();
   return (
     <>
       <section id="pourquoi" className="tnb-band py-16 sm:py-20">

@@ -23,6 +23,7 @@ import {
   type RideDraft,
 } from '@/lib/ride-request';
 import { officialWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
+import { useLiveFleet } from '@/lib/use-live-fleet';
 
 const emptyDraft = (): RideDraft => ({
   name: '',
@@ -91,7 +92,8 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
     };
   }, []);
 
-  const cat = fleetCategoryById(draft.categoryId);
+  const cats = useLiveFleet();
+  const cat = cats.find((c) => c.id === draft.categoryId) ?? fleetCategoryById(draft.categoryId);
   const immediate = isImmediate(draft);
   const cta = immediate ? 'Commander la course' : 'Réserver la course';
   const timeLabel = draft.timeMode === 'now' ? 'Maintenant' : draft.time;
@@ -355,7 +357,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
         </div>
         <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Type de véhicule</p>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {fleetCategories.map((c) => (
+          {cats.map((c) => (
             <button
               key={c.id}
               type="button"

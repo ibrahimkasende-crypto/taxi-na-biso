@@ -3,8 +3,9 @@ import { Car, Crown, Gem, Mountain, Sparkles, Users } from 'lucide-react';
 
 import { PageHero } from '@/components/PageHero';
 import { Reveal } from '@/components/Reveal';
-import { fleetCategories } from '@/config/fleet';
 import { photos } from '@/config/media';
+import { overlayFleetRates } from '@/lib/live-fleet';
+import { getSupabaseServer } from '@/lib/supabase-server';
 
 const icons = {
   basic: Car,
@@ -15,7 +16,8 @@ const icons = {
   '4x4': Mountain,
 } as const;
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const fleetCategories = await overlayFleetRates(await getSupabaseServer());
   return (
     <>
       <PageHero

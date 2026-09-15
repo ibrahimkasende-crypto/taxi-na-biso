@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-import { fleetCategoryById } from '@/config/fleet';
+import { AdminModal, EmptyState, KpiCard, Skeleton, StatusPill } from '@/components/admin/AdminUi';
+import { showAdminToast } from '@/components/admin/AdminShell';
+import { KinshasaMap } from '@/components/KinshasaMap';
+import { fleetCategories, fleetCategoryById } from '@/config/fleet';
 import { bookingDb } from '@/lib/booking-db';
+import { timeAgoFr } from '@/lib/admin-format';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { openWhatsApp, whatsAppUrl } from '@/lib/whatsapp';
 
@@ -30,15 +34,20 @@ export type BookingRequestRow = {
   trip_id: string | null;
 };
 
-const STATUS: Record<string, string> = {
-  pending: 'En attente',
-  approved: 'Approuvée',
-  rejected: 'Refusée',
-};
+const FILTERS = [
+  { id: 'all', label: 'Toutes' },
+  { id: 'pending', label: 'En attente' },
+  { id: 'approved', label: 'Approuvées' },
+  { id: 'rejected', label: 'Refusées' },
+] as const;
 
 export function DemandesList() {
   const [rows, setRows] = useState<BookingRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
+  const [q, setQ] = useState('');
+  const [date, setDate] = useState('');
+  const [category, setCategory] = useState('');
 
   useEffect(() => {
     const supabase = bookingDb(getSupabaseBrowser());
@@ -63,58 +72,113 @@ export function DemandesList() {
     };
   }, []);
 
-  const pending = useMemo(() => rows.filter((r) => r.status === 'pending').length, [rows]);
+  const pending = rows.filter((r) => r.status === 'pending').length;
+  const today = new Date().toDateString();
+  const approvedToday = rows.filter((r) => r.status === 'approved' && new Date(r.created_at).toDateString() === today).length;
+  const rejected = rows.filter((r) => r.status === 'rejected').length;
 
-  if (loading) return <p className="text-sm text-muted">Chargement…</p>;
+  const visible = useMemo(() => {
+    return rows.filter((r) => {
+      if (filter !== 'all' && r.status !== filter) return false;
+      if (category && r.category !== category) return false;
+      if (date && !r.scheduled_for.startsWith(date)) return false;
+      const hay = `${r.reference} ${r.customer_name} ${r.customer_phone} ${r.pickup_label} ${r.dropoff_label}`.toLowerCase();
+      if (q.trim() && !hay.includes(q.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [rows, filter, q, date, category]);
+
+  if (loading) return <Skeleton className="h-64" />;
 
   return (
     <div>
-      <div className="mb-6 flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Demandes de courses</h1>
-          <p className="text-sm text-muted">{pending} en attente</p>
-        </div>
+      <h1 className="mb-4 text-2xl font-bold">Demandes de courses</h1>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <KpiCard label="En attente" value={pending} />
+        <KpiCard label="Approuvées aujourd’hui" value={approvedToday} />
+        <KpiCard label="Refusées" value={rejected} />
       </div>
-      <div className="overflow-x-auto rounded-xl border bg-white">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-[#f6f8fa] text-xs uppercase text-muted">
-            <tr>
-              <th className="px-3 py-2">Référence</th>
-              <th className="px-3 py-2">Client</th>
-              <th className="px-3 py-2">Trajet</th>
-              <th className="px-3 py-2">Quand</th>
-              <th className="px-3 py-2">Catégorie</th>
-              <th className="px-3 py-2">Statut</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="px-3 py-3 font-medium">{r.reference}</td>
-                <td className="px-3 py-3">
-                  {r.customer_name}
-                  <div className="text-xs text-muted">{r.customer_phone}</div>
-                </td>
-                <td className="px-3 py-3">
-                  {r.pickup_label} → {r.dropoff_label}
-                </td>
-                <td className="px-3 py-3 text-xs">
-                  {new Date(r.scheduled_for).toLocaleString('fr-FR')}
-                  <div className="text-muted">{timeAgo(r.created_at)}</div>
-                </td>
-                <td className="px-3 py-3">{fleetCategoryById(r.category).label}</td>
-                <td className="px-3 py-3">{STATUS[r.status]}</td>
-                <td className="px-3 py-3">
-                  <Link href={`/admin/demandes/${r.id}`} className="text-brand">
-                    Voir
-                  </Link>
-                </td>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            className={`rounded-full px-3 py-1.5 text-sm ${filter === f.id ? 'bg-taxi text-navy' : 'bg-white'}`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <div className="mb-4 grid gap-2 sm:grid-cols-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Rechercher"
+          className="min-h-11 rounded-xl border px-3"
+          aria-label="Rechercher une demande"
+        />
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-h-11 rounded-xl border px-3" aria-label="Filtrer par date" />
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="min-h-11 rounded-xl border px-3" aria-label="Filtrer par catégorie">
+          <option value="">Toutes les catégories</option>
+          {fleetCategories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {visible.length === 0 ? (
+        <EmptyState>Aucune demande dans ce filtre.</EmptyState>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-muted">
+              <tr>
+                <th className="px-3 py-3">Référence</th>
+                <th className="px-3 py-3">Client</th>
+                <th className="px-3 py-3">Téléphone</th>
+                <th className="px-3 py-3">Départ</th>
+                <th className="px-3 py-3">Destination</th>
+                <th className="px-3 py-3">Date</th>
+                <th className="px-3 py-3">Heure</th>
+                <th className="px-3 py-3">Catégorie</th>
+                <th className="px-3 py-3">Statut</th>
+                <th className="px-3 py-3">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {visible.map((r) => {
+                const when = new Date(r.scheduled_for);
+                return (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-3 py-3">
+                      <Link href={`/admin/demandes/${r.id}`} className="font-semibold hover:underline">
+                        {r.reference}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3">{r.customer_name}</td>
+                    <td className="px-3 py-3">{r.customer_phone}</td>
+                    <td className="px-3 py-3">{r.pickup_label}</td>
+                    <td className="px-3 py-3">{r.dropoff_label}</td>
+                    <td className="px-3 py-3">{when.toLocaleDateString('fr-FR')}</td>
+                    <td className="px-3 py-3">{when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="px-3 py-3">{fleetCategoryById(r.category).label}</td>
+                    <td className="px-3 py-3">
+                      <StatusPill status={r.status} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <Link href={`/admin/demandes/${r.id}`} className="text-sm underline">
+                        Voir
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -122,6 +186,7 @@ export function DemandesList() {
 export function DemandeDetail({ id }: { id: string }) {
   const [row, setRow] = useState<BookingRequestRow | null>(null);
   const [reason, setReason] = useState('Aucun chauffeur disponible');
+  const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<'approve' | 'reject' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +198,15 @@ export function DemandeDetail({ id }: { id: string }) {
   }
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    (async () => {
+      const supabase = bookingDb(getSupabaseBrowser());
+      const { data } = await supabase.from('booking_requests').select('*').eq('id', id).maybeSingle();
+      if (!cancelled) setRow(data as BookingRequestRow | null);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function approve() {
@@ -142,115 +215,147 @@ export function DemandeDetail({ id }: { id: string }) {
     const { error: err } = await bookingDb(getSupabaseBrowser()).rpc('approve_booking_request', { p_id: id });
     setBusy(false);
     setConfirm(null);
-    if (err) setError('Impossible d’approuver cette demande.');
-    else await load();
+    if (err) {
+      setError('Impossible d’approuver cette demande.');
+      showAdminToast('Impossible d’approuver cette demande.');
+    } else {
+      showAdminToast('Course approuvée');
+      await load();
+    }
   }
 
   async function reject() {
     setBusy(true);
     setError(null);
-    const { error: err } = await bookingDb(getSupabaseBrowser()).rpc('reject_booking_request', { p_id: id, p_reason: reason });
+    const text = reason === 'Autre' ? comment.trim() || 'Autre' : reason;
+    const { error: err } = await bookingDb(getSupabaseBrowser()).rpc('reject_booking_request', { p_id: id, p_reason: text });
     setBusy(false);
     setConfirm(null);
-    if (err) setError('Impossible de refuser cette demande.');
-    else await load();
+    if (err) {
+      setError('Impossible de refuser cette demande.');
+      showAdminToast('Impossible de refuser cette demande.');
+    } else {
+      showAdminToast('Demande refusée');
+      await load();
+    }
   }
 
-  if (!row) return <p className="text-sm text-muted">Chargement…</p>;
+  if (!row) return <Skeleton className="h-64" />;
   const cat = fleetCategoryById(row.category);
-  const map = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${row.pickup_lat}%2C${row.pickup_lng}%3B${row.dropoff_lat}%2C${row.dropoff_lng}`;
+  const when = new Date(row.scheduled_for);
 
   return (
     <div className="max-w-3xl space-y-4">
-      <Link href="/admin/demandes" className="text-sm text-brand">
+      <Link href="/admin/demandes" className="text-sm text-muted">
         ← Demandes
       </Link>
-      <h1 className="text-2xl font-semibold">{row.reference}</h1>
-      <p className="text-sm text-muted">{STATUS[row.status]} · {timeAgo(row.created_at)}</p>
-      <div className="rounded-xl border bg-white p-5 text-sm">
-        <p><strong>Client</strong> {row.customer_name}</p>
-        <p className="mt-1"><strong>Téléphone</strong> {row.customer_phone}</p>
-        <p className="mt-1"><strong>Départ</strong> {row.pickup_label}</p>
-        <p className="mt-1"><strong>Destination</strong> {row.dropoff_label}</p>
-        <p className="mt-1"><strong>Date / heure</strong> {new Date(row.scheduled_for).toLocaleString('fr-FR')}</p>
-        <p className="mt-1"><strong>Catégorie</strong> {cat.label} ({cat.hourlyUsd} $/h · {cat.dailyUsd} $/j)</p>
-        {row.reject_reason ? <p className="mt-1"><strong>Motif</strong> {row.reject_reason}</p> : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{row.reference}</h1>
+          <p className="text-sm text-muted">Créée {timeAgoFr(row.created_at)}</p>
+        </div>
+        <StatusPill status={row.status} />
       </div>
-      <a href={map} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border bg-white">
-        <iframe
-          title="Aperçu du trajet"
-          className="h-56 w-full"
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${row.pickup_lng-0.05}%2C${row.pickup_lat-0.05}%2C${row.dropoff_lng+0.05}%2C${row.dropoff_lat+0.05}&layer=mapnik&marker=${row.pickup_lat}%2C${row.pickup_lng}`}
-        />
-      </a>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      <div className="rounded-2xl bg-white p-5 text-sm shadow-card">
+        <p>
+          <strong>Client</strong> {row.customer_name}
+        </p>
+        <p className="mt-1">
+          <strong>Téléphone</strong> {row.customer_phone}
+        </p>
+        <p className="mt-1">
+          <strong>Départ</strong> {row.pickup_label}
+        </p>
+        <p className="mt-1">
+          <strong>Destination</strong> {row.dropoff_label}
+        </p>
+        <p className="mt-1">
+          <strong>Date demandée</strong> {when.toLocaleDateString('fr-FR')}
+        </p>
+        <p className="mt-1">
+          <strong>Heure</strong> {when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+        <p className="mt-1">
+          <strong>Catégorie</strong> {cat.label}
+        </p>
+        <p className="mt-1">
+          <strong>Tarif de référence</strong> {row.hourly_rate_usd ?? cat.hourlyUsd} $ / heure · {row.daily_rate_usd ?? cat.dailyUsd} $ / journée
+        </p>
+        {row.reject_reason ? (
+          <p className="mt-1">
+            <strong>Motif</strong> {row.reject_reason}
+          </p>
+        ) : null}
+      </div>
+      <div className="h-56 overflow-hidden rounded-2xl bg-white shadow-card">
+        <KinshasaMap pickup={{ lat: row.pickup_lat, lng: row.pickup_lng }} dropoff={{ lat: row.dropoff_lat, lng: row.dropoff_lng }} />
+      </div>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
         {row.status === 'pending' ? (
           <>
-            <button type="button" className="btn-primary" disabled={busy} onClick={() => setConfirm('approve')}>
+            <button type="button" className="min-h-11 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => setConfirm('approve')}>
               Approuver
             </button>
-            <button type="button" className="rounded-xl border px-4 py-2 text-sm" disabled={busy} onClick={() => setConfirm('reject')}>
+            <button type="button" className="min-h-11 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => setConfirm('reject')}>
               Refuser
             </button>
           </>
         ) : null}
         <button
           type="button"
-          className="rounded-xl border px-4 py-2 text-sm"
+          className="min-h-11 rounded-xl border px-4 text-sm"
           onClick={() =>
             openWhatsApp(
               whatsAppUrl(
                 row.customer_phone,
-                `Bonjour ${row.customer_name}, nous vous contactons concernant votre demande TAXI NA BISO ${row.reference}.`,
+                `Bonjour ${row.customer_name},\n\nNous vous contactons concernant votre demande TAXI NA BISO ${row.reference}.`,
               ),
             )
           }
         >
-          Contacter sur WhatsApp
+          Contacter le client sur WhatsApp
         </button>
         {row.trip_id ? (
-          <Link href="/admin/dispatch" className="rounded-xl border px-4 py-2 text-sm">
-            Dispatch
+          <Link href={`/admin/courses/${row.trip_id}`} className="min-h-11 rounded-xl border px-4 py-2 text-sm">
+            Voir la course
           </Link>
         ) : null}
       </div>
       {confirm === 'approve' ? (
-        <div className="rounded-xl border bg-white p-4 text-sm">
-          <p>Approuver cette demande de course ?</p>
-          <div className="mt-3 flex gap-2">
-            <button type="button" className="btn-primary" disabled={busy} onClick={() => void approve()}>
+        <AdminModal title="Approuver cette demande ?" onClose={() => setConfirm(null)}>
+          <p className="text-sm text-muted">La course passera ensuite à l’attribution chauffeur.</p>
+          <div className="mt-4 flex gap-2">
+            <button type="button" className="min-h-11 flex-1 rounded-xl bg-navy text-white" disabled={busy} onClick={() => void approve()}>
               Confirmer
             </button>
-            <button type="button" onClick={() => setConfirm(null)}>Annuler</button>
+            <button type="button" className="min-h-11 flex-1 rounded-xl border" onClick={() => setConfirm(null)}>
+              Annuler
+            </button>
           </div>
-        </div>
+        </AdminModal>
       ) : null}
       {confirm === 'reject' ? (
-        <div className="rounded-xl border bg-white p-4 text-sm">
-          <p>Motif du refus</p>
-          <select className="mt-2 min-h-11 w-full rounded-lg border px-2" value={reason} onChange={(e) => setReason(e.target.value)}>
-            <option>Zone non desservie</option>
+        <AdminModal title="Motif du refus" onClose={() => setConfirm(null)}>
+          <select className="min-h-11 w-full rounded-xl border px-3" value={reason} onChange={(e) => setReason(e.target.value)}>
             <option>Aucun chauffeur disponible</option>
+            <option>Zone non desservie</option>
             <option>Informations insuffisantes</option>
             <option>Autre</option>
           </select>
-          <div className="mt-3 flex gap-2">
-            <button type="button" className="rounded-xl bg-ink px-4 py-2 text-white" disabled={busy} onClick={() => void reject()}>
+          {reason === 'Autre' ? (
+            <textarea className="mt-2 w-full rounded-xl border px-3 py-2" rows={3} placeholder="Commentaire" value={comment} onChange={(e) => setComment(e.target.value)} />
+          ) : null}
+          <div className="mt-4 flex gap-2">
+            <button type="button" className="min-h-11 flex-1 rounded-xl bg-red-600 text-white" disabled={busy} onClick={() => void reject()}>
               Refuser
             </button>
-            <button type="button" onClick={() => setConfirm(null)}>Annuler</button>
+            <button type="button" className="min-h-11 flex-1 rounded-xl border" onClick={() => setConfirm(null)}>
+              Annuler
+            </button>
           </div>
-        </div>
+        </AdminModal>
       ) : null}
     </div>
   );
-}
-
-function timeAgo(iso: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 1) return 'À l’instant';
-  if (mins < 60) return `Il y a ${mins} min`;
-  const h = Math.round(mins / 60);
-  return `Il y a ${h} h`;
 }
