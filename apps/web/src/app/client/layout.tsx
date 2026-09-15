@@ -5,6 +5,7 @@ import { requireRider } from '@/lib/session';
 
 const links = [
   { href: '/client', label: 'Accueil' },
+  { href: '/client/demandes', label: 'Demandes' },
   { href: '/client/courses', label: 'Courses' },
   { href: '/client/paiements', label: 'Paiements' },
   { href: '/client/profil', label: 'Profil' },

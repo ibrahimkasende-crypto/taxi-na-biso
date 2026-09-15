@@ -39,6 +39,19 @@ La vidéo et les photos de mobilité générale **ne représentent pas Kinshasa*
 
 Licence Pexels : https://www.pexels.com/license/
 
+## Flotte (ancien site Taxi Na Biso)
+
+Images rapatriées depuis `https://www.lentrepreneur.cd/taxinabiso/images/` pour usage local, sans CDN externe.
+
+| Fichier | Catégorie métier | Véhicule visible |
+|---|---|---|
+| `images/fleet/basic.jpg` | Basic | Toyota IST |
+| `images/fleet/confort.jpg` | Confort | Toyota Blade |
+| `images/fleet/premium.webp` | Premium | Toyota Crown |
+| `images/fleet/familiale.jpg` | **Familiale Premium** (pas Familiale) | Toyota Alphard |
+
+L’ancien site étiquetait l’Alphard « Familiale ». Les tarifs officiels classent l’Alphard en Familiale Premium (12 $/h, 100 $/journée). Pas de photo 4x4 fournie.
+
 ## Logo
 
 Wordmark Taxi Na Biso : `apps/rider/assets/monochrome-icon.png` et `adaptive-icon.png`, copiés dans `apps/web/public/branding/` (fichiers Rider non déplacés).

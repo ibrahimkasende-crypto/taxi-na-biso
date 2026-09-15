@@ -101,8 +101,8 @@ export function SiteHeader() {
           >
             Se connecter
           </Link>
-          <Link href="/commander" className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-            Commander une course
+          <Link href="/#reservation" className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
+            Réserver
           </Link>
         </div>
         <button
@@ -128,8 +128,8 @@ export function SiteHeader() {
           <Link href="/connexion" className="min-h-11 py-2" onClick={() => setOpen(false)}>
             Se connecter
           </Link>
-          <Link href="/commander" className="btn-primary" onClick={() => setOpen(false)}>
-            Commander une course
+          <Link href="/#reservation" className="btn-primary" onClick={() => setOpen(false)}>
+            Réserver
           </Link>
         </div>
       ) : null}
@@ -146,31 +146,36 @@ export function SiteFooter() {
           <Link href="/" className="inline-block">
             <BrandLogo inverted className="h-12 w-auto max-w-[280px] object-contain object-left sm:h-14" />
           </Link>
-          <p className="mt-3 text-white/70">{brand.tagline}</p>
+          <p className="mt-3 text-white/70">Transport fiable · Service rapide · Disponible 24/7</p>
           <p className="mt-2 text-white/60">
             {brand.defaultCity}, {brand.defaultCountry}
           </p>
         </div>
         <div>
-          <p className="mb-2 font-semibold">Passagers</p>
+          <p className="mb-2 font-semibold">Navigation</p>
           <ul className="space-y-2 text-white/70">
-            <li><Link href="/commander" className="hover:text-white">Commander une course</Link></li>
-            <li><Link href="/connexion" className="hover:text-white">Se connecter</Link></li>
+            <li><Link href="/" className="hover:text-white">Accueil</Link></li>
+            <li><Link href="/#services" className="hover:text-white">Services</Link></li>
+            <li><Link href="/#flotte" className="hover:text-white">Flotte</Link></li>
+            <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
+            <li><Link href="/#tarifs" className="hover:text-white">Tarifs</Link></li>
+            <li><Link href="/#contact" className="hover:text-white">Contact</Link></li>
+            <li><Link href="/#reservation" className="hover:text-white">Réserver</Link></li>
           </ul>
         </div>
         <div>
-          <p className="mb-2 font-semibold">Chauffeurs</p>
+          <p className="mb-2 font-semibold">Légal</p>
           <ul className="space-y-2 text-white/70">
-            <li><Link href="/chauffeurs" className="hover:text-white">Devenir chauffeur</Link></li>
-            <li><Link href="/chauffeur/connexion" className="hover:text-white">Espace chauffeur</Link></li>
+            <li><Link href="/conditions" className="hover:text-white">Conditions d’utilisation</Link></li>
+            <li><Link href="/confidentialite" className="hover:text-white">Politique de confidentialité</Link></li>
+            <li><Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link></li>
           </ul>
         </div>
         <div>
           <p className="mb-2 font-semibold">Taxi Na Biso</p>
           <ul className="space-y-2 text-white/70">
-            <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
-            <li><Link href="/securite" className="hover:text-white">Sécurité</Link></li>
-            <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+            <li><Link href="/connexion" className="hover:text-white">Espace client</Link></li>
+            <li><Link href="/chauffeur/connexion" className="hover:text-white">Espace chauffeur</Link></li>
           </ul>
         </div>
       </div>

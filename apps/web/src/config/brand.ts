@@ -10,7 +10,7 @@ export const brand = {
   currencySymbol: 'FC',
   timezone: 'Africa/Kinshasa',
   locale: 'fr-CD',
-  supportEmail: 'support@example.com',
+  supportEmail: 'hello@taxinabiso.com',
   heroKicker: 'La mobilité pensée pour Kinshasa',
   heroTitle: 'Votre trajet. Votre ville. Na Biso.',
   heroLead: 'Votre trajet commence ici.',
@@ -107,10 +107,11 @@ export const examplePlaces: readonly ExamplePlace[] = [
 
 export const publicNav = [
   { href: '/', label: 'Accueil' },
-  { href: '/services', label: 'Services' },
-  { href: '/securite', label: 'Sécurité' },
-  { href: '/chauffeurs', label: 'Chauffeurs' },
+  { href: '/#services', label: 'Services' },
+  { href: '/#flotte', label: 'Flotte' },
+  { href: '/#tarifs', label: 'Tarifs' },
   { href: '/a-propos', label: 'À propos' },
+  { href: '/#contact', label: 'Contact' },
 ] as const;
 
 export const driverAppNav = [

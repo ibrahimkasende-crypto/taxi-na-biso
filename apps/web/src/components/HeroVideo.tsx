@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
-import { QuickBook } from '@/components/QuickBook';
+import { RideRequestForm } from '@/components/RideRequestForm';
 import { brand } from '@/config/brand';
 import { videos } from '@/config/media';
 import { usePrefersReducedMotion } from '@/lib/motion';
@@ -85,7 +85,7 @@ export function HeroVideo() {
       />
 
       <div className="tnb-shell relative z-10 flex min-h-[90svh] flex-col justify-end pb-16 pt-28 lg:min-h-[100svh] lg:justify-center lg:pb-24 lg:pt-32">
-        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-center xl:grid-cols-[minmax(0,1.1fr)_26rem]">
+        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-center">
           <div>
             <p className="animate-fade-up text-sm font-semibold uppercase tracking-[0.22em] text-white/80">
               {brand.appName}
@@ -105,7 +105,9 @@ export function HeroVideo() {
           </div>
 
           <div className="animate-fade-up w-full" style={{ animationDelay: '220ms' }}>
-            <QuickBook compact variant="hero" />
+            <Suspense fallback={<div className="h-80 rounded-[1.75rem] bg-white/90" />}>
+              <RideRequestForm compact />
+            </Suspense>
           </div>
         </div>
       </div>

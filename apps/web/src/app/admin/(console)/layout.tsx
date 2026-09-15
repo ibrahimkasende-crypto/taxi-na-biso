@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { DemandesNavLink } from '@/components/admin/DemandesNavLink';
 import { SignOutButton } from '@/components/SignOutButton';
 import { homeForRole, isStaffRole } from '@/lib/roles';
 import { getSupabaseServer } from '@/lib/supabase-server';
@@ -8,7 +9,6 @@ import { getSupabaseServer } from '@/lib/supabase-server';
 export const dynamic = 'force-dynamic';
 
 const nav = [
-  { href: '/admin', label: 'Tableau de bord' },
   { href: '/admin/dispatch', label: 'Dispatch' },
   { href: '/admin/drivers', label: 'Chauffeurs' },
   { href: '/admin/vehicles', label: 'Véhicules' },
@@ -40,6 +40,10 @@ export default async function AdminConsoleLayout({ children }: { children: React
         </Link>
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">Administration</p>
         <nav className="flex flex-col gap-1" aria-label="Navigation administration">
+          <Link href="/admin" className="rounded px-3 py-2 text-sm hover:bg-gray-100">
+            Tableau de bord
+          </Link>
+          <DemandesNavLink />
           {nav.map((n) => (
             <Link key={n.href} href={n.href} className="rounded px-3 py-2 text-sm hover:bg-gray-100">
               {n.label}

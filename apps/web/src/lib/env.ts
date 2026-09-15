@@ -15,7 +15,7 @@ export function getPublicEnv() {
     mapStyleUrl: process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? '',
     driverAppUrl: process.env.NEXT_PUBLIC_DRIVER_APP_URL ?? '',
     riderAppUrl: process.env.NEXT_PUBLIC_RIDER_APP_URL ?? '',
-    supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '+243800000000',
-    supportWhatsapp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? '243800000000',
+    supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '+243974543860',
+    supportWhatsapp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? '243974543860',
   };
 }
