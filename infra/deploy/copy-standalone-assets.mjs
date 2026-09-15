@@ -21,4 +21,13 @@ if (existsSync(staticSrc)) {
 if (existsSync(publicSrc)) {
   cpSync(publicSrc, path.join(nested, 'public'), { recursive: true });
 }
+const nmSrc = path.join(appDir, '.next', 'standalone', 'node_modules');
+const nmDest = path.join(nested, 'node_modules');
+if (existsSync(nmSrc) && !existsSync(path.join(nmDest, 'next'))) {
+  cpSync(nmSrc, nmDest, { recursive: true });
+}
+const runtimeNm = path.join(appDir, '.next', 'node_modules');
+if (existsSync(nmSrc) && !existsSync(path.join(runtimeNm, 'next'))) {
+  cpSync(nmSrc, runtimeNm, { recursive: true });
+}
 console.log('Assets standalone copiés.');
