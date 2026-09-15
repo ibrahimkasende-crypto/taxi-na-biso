@@ -12,3 +12,8 @@ export const demoDriver = {
   email: 'taxinabiso@chauffeur.com',
   password: '123456',
 } as const;
+
+export const demoAdmin = {
+  email: 'admin@taxinabiso.com',
+  password: '123456',
+} as const;

@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-import { canAccessClient, canAccessDriver, homeForRole } from '@/lib/roles';
 import { withAuthCookieOptions } from '@/lib/auth-cookies';
+import { canAccessClient, canAccessDriver, canAccessStaff, homeForRole } from '@/lib/roles';
 
 function isPublicDriverAuth(pathname: string): boolean {
   return (
@@ -12,18 +12,21 @@ function isPublicDriverAuth(pathname: string): boolean {
   );
 }
 
+function isAdminLogin(pathname: string): boolean {
+  return pathname === '/admin/login' || pathname.startsWith('/admin/login/');
+}
+
 function redirectTo(request: NextRequest, dest: string) {
-  if (dest.startsWith('http://') || dest.startsWith('https://')) {
-    return NextResponse.redirect(dest);
-  }
   return NextResponse.redirect(new URL(dest, request.url));
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
   const needsAuth =
     pathname.startsWith('/client') ||
-    (pathname.startsWith('/chauffeur') && !isPublicDriverAuth(pathname));
+    (pathname.startsWith('/chauffeur') && !isPublicDriverAuth(pathname)) ||
+    (isAdminPath && !isAdminLogin(pathname));
 
   if (!needsAuth) return NextResponse.next();
 
@@ -50,6 +53,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    if (isAdminPath) {
+      const dest = request.nextUrl.clone();
+      dest.pathname = '/admin/login';
+      dest.searchParams.set('next', pathname);
+      return NextResponse.redirect(dest);
+    }
     const login = pathname.startsWith('/chauffeur') ? '/chauffeur/connexion' : '/connexion';
     const dest = request.nextUrl.clone();
     dest.pathname = login;
@@ -66,10 +75,20 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/chauffeur') && !isPublicDriverAuth(pathname) && !canAccessDriver(role)) {
     return redirectTo(request, homeForRole(role));
   }
+  if (isAdminPath && !isAdminLogin(pathname) && !canAccessStaff(role)) {
+    return redirectTo(request, homeForRole(role));
+  }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/client', '/client/:path*', '/chauffeur', '/chauffeur/:path*'],
+  matcher: [
+    '/client',
+    '/client/:path*',
+    '/chauffeur',
+    '/chauffeur/:path*',
+    '/admin',
+    '/admin/:path*',
+  ],
 };

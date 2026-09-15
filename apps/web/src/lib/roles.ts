@@ -1,5 +1,3 @@
-import { adminHome as adminHomeUrl, adminLoginUrl as adminLoginHref, adminUrl } from './urls';
-
 export type AppRole =
   | 'rider'
   | 'driver'
@@ -24,16 +22,12 @@ export function canAccessStaff(role: string | null | undefined): boolean {
   return isStaffRole(role);
 }
 
-export function adminAppUrl(): string {
-  return adminUrl();
-}
-
 export function adminHome(): string {
-  return adminHomeUrl();
+  return '/admin';
 }
 
 export function adminLoginUrl(): string {
-  return adminLoginHref();
+  return '/admin/login';
 }
 
 export function homeForRole(role: string | null | undefined): string {

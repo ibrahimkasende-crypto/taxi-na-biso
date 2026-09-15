@@ -3,7 +3,7 @@
  * Empaquette une app Next.js standalone pour Hostinger / VPS.
  * Usage (depuis la racine du monorepo, après un build) :
  *   node infra/deploy/pack.mjs web
- *   node infra/deploy/pack.mjs admin
+ * (pack admin = legacy, ne plus déployer)
  */
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

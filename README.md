@@ -45,8 +45,7 @@ pnpm dev
 
 Then:
 
-- Site public / Client / Chauffeur : http://localhost:3001
-- Admin portal: http://localhost:3000
+- Site public / Client / Chauffeur / Admin : http://localhost:3001
 - Rider app: scan QR from `apps/rider` (Expo Go) or open `i`/`a`
 - Driver app: scan QR from `apps/driver`
 
@@ -54,13 +53,12 @@ Demo accounts (after `make reset`, **local / staging only**):
 
 - Client: `taxinabiso@client.com` / `123456` → http://localhost:3001/connexion
 - Chauffeur: `taxinabiso@chauffeur.com` / `123456` → http://localhost:3001/chauffeur/connexion
-- Admin: `admin@taxinabiso.com` / `123456` → http://localhost:3000/login
+- Admin: `admin@taxinabiso.com` / `123456` → http://localhost:3001/admin/login
 
 Production (HTTPS, sans ports) : voir [`docs/DEPLOY.md`](docs/DEPLOY.md)
 
 - Site : https://taxinabiso.newsystemcorps.com
-- Admin : https://admin.taxinabiso.newsystemcorps.com
-- Raccourcis : `/admin` et `/admin/login` redirigent vers le sous-domaine admin
+- Admin : https://taxinabiso.newsystemcorps.com/admin/login
 
 ## Architecture
 

@@ -24,7 +24,7 @@ describe('rôles', () => {
   it('renvoie un accueil par rôle sans boucle', () => {
     expect(homeForRole('rider')).toBe('/client');
     expect(homeForRole('driver')).toBe('/chauffeur');
-    expect(homeForRole('admin')).toMatch(/\/dashboard$/);
+    expect(homeForRole('admin')).toBe('/admin');
     expect(homeForRole('rider')).not.toBe('/chauffeur');
   });
 });

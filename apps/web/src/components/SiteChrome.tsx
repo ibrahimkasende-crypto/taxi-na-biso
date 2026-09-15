@@ -3,10 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, Shield, X } from 'lucide-react';
 
 import { brand, publicNav } from '@/config/brand';
-import { getPublicEnv } from '@/lib/env';
 import { useScrollProgress } from '@/lib/motion';
 
 export function BrandLogo({
@@ -132,13 +131,6 @@ export function SiteHeader() {
           <Link href="/commander" className="btn-primary" onClick={() => setOpen(false)}>
             Commander une course
           </Link>
-          <a
-            href={`${getPublicEnv().adminUrl}/login`}
-            className="mt-3 min-h-11 border-t border-black/5 pt-3 text-sm text-ink/45"
-            onClick={() => setOpen(false)}
-          >
-            Administration
-          </a>
         </div>
       ) : null}
     </header>
@@ -182,13 +174,27 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/45">
-        © {new Date().getFullYear()} {brand.appName}.{' '}
-        <a href={`${getPublicEnv().adminUrl}/login`} className="text-white/35 underline-offset-2 hover:text-white/60 hover:underline">
-          Administration
-        </a>
+      <div className="flex items-center justify-center gap-3 border-t border-white/10 px-4 py-4 text-center text-xs text-white/45">
+        <span>© {new Date().getFullYear()} {brand.appName}.</span>
+        <AdminFooterLink />
       </div>
     </footer>
+  );
+}
+
+function AdminFooterLink() {
+  return (
+    <Link
+      href="/admin"
+      aria-label="Administration"
+      title="Administration"
+      className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-white/35 transition hover:bg-white/5 hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+      <span className="text-[11px] font-medium tracking-wide text-white/40 transition group-hover:text-white/70 group-focus-visible:text-white/70">
+        Administration
+      </span>
+    </Link>
   );
 }
 

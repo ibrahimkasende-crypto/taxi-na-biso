@@ -9,7 +9,10 @@
     "node": ">=20.11"
   },
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@openride/web",
+    "build:all": "turbo run build",
+    "build:web": "turbo run build --filter=@openride/web",
+    "build:admin": "turbo run build --filter=@openride/admin",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

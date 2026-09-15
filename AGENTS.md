@@ -8,8 +8,8 @@ captures the non-obvious, cloud-specific caveats.
 
 ### What runs where
 
-- `apps/admin` — Next.js web console. This is the only app that can be run and
-  tested end-to-end headlessly in the cloud VM (browser). Dev: `pnpm --filter @openride/admin dev` → http://localhost:3000.
+- `apps/web` — Next.js (site public, Client, Chauffeur, Administration sous `/admin`). Dev: `pnpm --filter @openride/web dev` → http://localhost:3001.
+- `apps/admin` — **legacy**. Ne plus déployer. L’admin production vit dans `apps/web`.
 - `apps/rider`, `apps/driver` — Expo/React Native. These need Expo Go or a
   device/simulator, so they cannot be fully exercised headlessly here. Lint /
   typecheck still run.
@@ -37,12 +37,12 @@ started manually each session, in this order:
   `pnpm db:*` scripts or `pnpm exec supabase ...`.
 - `supabase start`/`db reset` run `infra/supabase/seed.sql` and **roll back the
   entire stack if the seed fails** — a bad seed means no backend at all.
-- Env files are per-app. The Next.js admin app reads `apps/admin/.env.local`
+- Env files are per-app. Next.js web (`apps/web`) reads `apps/web/.env.local`
   (NOT the repo root `.env.local`): set `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
   and `NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY>`. Get the anon key with
   `pnpm exec supabase status --workdir infra -o env | grep '^ANON_KEY'`. The
   local anon/service keys are the stable Supabase dev defaults.
-- Demo admin login: `admin@taxinabiso.com` / `123456` (local seed only).
+- Demo admin login: `admin@taxinabiso.com` / `123456` (local seed only) at `/admin/login`.
   Client: `taxinabiso@client.com`. Chauffeur: `taxinabiso@chauffeur.com`. Phone
   logins use the fixed OTP `123456` (see `[auth.sms.test_otp]` in
   `infra/supabase/config.toml`); no real Twilio needed locally.

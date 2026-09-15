@@ -3,6 +3,7 @@ export function shouldBypassServiceWorkerCache(pathname: string): boolean {
   return (
     pathname.startsWith('/client') ||
     pathname.startsWith('/chauffeur') ||
+    pathname.startsWith('/admin') ||
     pathname.startsWith('/commander') ||
     pathname.startsWith('/connexion') ||
     pathname.startsWith('/inscription')

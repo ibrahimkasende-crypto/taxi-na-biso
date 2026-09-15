@@ -1,3 +1,5 @@
+import { isStaffRole } from './roles';
+
 /** Empêche les redirections ouvertes (//evil, https://…, chemins relatifs hors site). */
 export function safeInternalPath(raw: string | null | undefined, fallback: string): string {
   if (!raw) return fallback;
@@ -16,5 +18,6 @@ export function destinationForRole(
   const dest = safeInternalPath(next, home);
   if (dest.startsWith('/chauffeur') && role !== 'driver') return home;
   if (dest.startsWith('/client') && role !== 'rider') return home;
+  if (dest.startsWith('/admin') && !isStaffRole(role)) return home;
   return dest;
 }

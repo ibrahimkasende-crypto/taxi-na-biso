@@ -1,32 +1,30 @@
 /** URLs publiques. Localhost uniquement si les variables de production sont absentes. */
 
 const PROD_SITE = 'https://taxinabiso.newsystemcorps.com';
-const PROD_ADMIN = 'https://admin.taxinabiso.newsystemcorps.com';
 
 function stripSlash(url: string): string {
   return url.replace(/\/$/, '');
 }
 
-function useProdHosts(): boolean {
+function productionHosts(): boolean {
   return process.env.NEXT_PUBLIC_APP_ENV === 'production';
 }
 
 export function siteUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL;
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_WEB_URL;
   if (fromEnv) return stripSlash(fromEnv);
-  return useProdHosts() ? PROD_SITE : 'http://localhost:3001';
+  return productionHosts() ? PROD_SITE : 'http://localhost:3001';
 }
 
+/** Console admin : même origine que le site (`apps/web`). */
 export function adminUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_ADMIN_URL;
-  if (fromEnv) return stripSlash(fromEnv);
-  return useProdHosts() ? PROD_ADMIN : 'http://localhost:3000';
+  return `${siteUrl()}/admin`;
 }
 
 export function adminHome(): string {
-  return `${adminUrl()}/dashboard`;
+  return '/admin';
 }
 
 export function adminLoginUrl(): string {
-  return `${adminUrl()}/login`;
+  return '/admin/login';
 }

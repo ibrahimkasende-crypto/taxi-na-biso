@@ -2,9 +2,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const adminUrl = (process.env.NEXT_PUBLIC_ADMIN_URL ?? '').replace(/\/$/, '');
-const remoteAdmin =
-  adminUrl.startsWith('https://') && !adminUrl.includes('localhost');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -30,11 +27,11 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    if (!remoteAdmin) return [];
     return [
-      { source: '/admin', destination: `${adminUrl}/dashboard`, permanent: false },
-      { source: '/admin/login', destination: `${adminUrl}/login`, permanent: false },
-      { source: '/admin/:path*', destination: `${adminUrl}/:path*`, permanent: false },
+      { source: '/admin/chauffeurs', destination: '/admin/drivers', permanent: false },
+      { source: '/admin/chauffeurs/:id', destination: '/admin/drivers/:id', permanent: false },
+      { source: '/admin/vehicules', destination: '/admin/vehicles', permanent: false },
+      { source: '/admin/paiements', destination: '/admin/payments', permanent: false },
     ];
   },
 };

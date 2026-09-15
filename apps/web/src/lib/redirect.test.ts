@@ -14,5 +14,8 @@ describe('redirections', () => {
     expect(destinationForRole('rider', '/chauffeur', '/client')).toBe('/client');
     expect(destinationForRole('driver', '/client', '/chauffeur')).toBe('/chauffeur');
     expect(destinationForRole('driver', '/chauffeur/offres', '/chauffeur')).toBe('/chauffeur/offres');
+    expect(destinationForRole('rider', '/admin', '/client')).toBe('/client');
+    expect(destinationForRole('driver', '/admin/login', '/chauffeur')).toBe('/chauffeur');
+    expect(destinationForRole('admin', '/admin/dispatch', '/admin')).toBe('/admin/dispatch');
   });
 });
