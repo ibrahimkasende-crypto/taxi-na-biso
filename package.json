@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=@openride/web",
-    "start": "npm run start --workspace=@openride/web",
+    "start": "node server.js",
     "build:all": "turbo run build",
     "build:web": "turbo run build --filter=@openride/web",
     "build:admin": "turbo run build --filter=@openride/admin",
