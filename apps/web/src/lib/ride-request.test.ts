@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { fleetCategories } from '@/config/fleet';
 import { searchKinshasaPlaces } from '@/config/places';
 import { officialWhatsAppUrl } from '@/lib/whatsapp';
-import { buildWhatsAppMessage, isPlausiblePhone, validateRideDraft } from '@/lib/ride-request';
+import { buildWhatsAppMessage, isPlausiblePhone, normalizePhone, validateRideDraft } from '@/lib/ride-request';
 
 describe('flotte officielle', () => {
   it('expose 6 catégories avec tarifs heure et journée', () => {
@@ -27,6 +27,7 @@ describe('recherche Kinshasa', () => {
     expect(searchKinshasaPlaces('aero')[0]?.label).toMatch(/Aéroport/i);
     expect(searchKinshasaPlaces('vic')[0]?.label).toMatch(/Victoire/i);
     expect(searchKinshasaPlaces('gom')[0]?.label).toMatch(/Gombe/i);
+    expect(searchKinshasaPlaces('lem')[0]?.label).toMatch(/Lemba/i);
   });
 });
 
@@ -40,6 +41,7 @@ describe('WhatsApp et validation', () => {
 
   it('valide une demande complète', () => {
     expect(isPlausiblePhone('+243974543860')).toBe(true);
+    expect(normalizePhone('0974543860')).toBe('+243974543860');
     const msg = buildWhatsAppMessage({
       reference: 'TNB-20260915-TEST',
       name: 'Client Test',

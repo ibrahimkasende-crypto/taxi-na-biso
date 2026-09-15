@@ -1,5 +1,6 @@
 import { fleetCategoryById, type FleetCategoryId } from '@/config/fleet';
 import type { KinshasaPlace } from '@/config/places';
+import { toE164Cd } from '@/config/brand';
 
 export const BOOKING_DRAFT_KEY = 'tnb_booking_draft';
 
@@ -35,6 +36,16 @@ export function placeFromKinshasa(p: KinshasaPlace): RidePlace {
 export function isPlausiblePhone(input: string): boolean {
   const digits = input.replace(/\D/g, '');
   return digits.length >= 9 && digits.length <= 15;
+}
+
+export function normalizePhone(input: string): string {
+  const trimmed = input.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return trimmed;
+  if (trimmed.startsWith('+') && digits.length >= 9) return `+${digits}`;
+  if (digits.startsWith('00') && digits.length >= 11) return `+${digits.slice(2)}`;
+  if (digits.startsWith('243') && digits.length >= 12) return `+${digits}`;
+  return toE164Cd(trimmed);
 }
 
 export function todayISODate(timeZone = 'Africa/Kinshasa'): string {
@@ -73,6 +84,52 @@ export function formatLongDate(date: string): string {
   });
 }
 
+export function formatWeekdayLong(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  if (!y || !m || !d) return date;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
+export function formatMonthYear(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export function shiftIsoDate(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  if (!y || !m || !d) return date;
+  const next = new Date(Date.UTC(y, m - 1, d + days));
+  return next.toISOString().slice(0, 10);
+}
+
+export function suggestTimes(date: string): string[] {
+  if (date !== todayISODate()) return ['08:00', '10:00', '14:00', '16:30', '18:00'];
+  const now = nowHHMM();
+  const [h, min] = now.split(':').map(Number);
+  const hour = h ?? 0;
+  const minute = min ?? 0;
+  const start = Math.ceil((hour * 60 + minute + 20) / 30) * 30;
+  const out: string[] = [];
+  for (let t = start; t <= 22 * 60 && out.length < 4; t += 30) {
+    out.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
+  }
+  return out;
+}
+
+export function isTimePastOnDate(date: string, time: string): boolean {
+  if (date > todayISODate()) return false;
+  if (date < todayISODate()) return true;
+  return time <= nowHHMM();
+}
+
 export function formatShortDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
   if (!y || !m || !d) return date;
@@ -98,7 +155,7 @@ export function validateRideDraft(draft: RideDraft): string | null {
     const when = combineKinshasaDateTime(draft.date, draft.time);
     if (Number.isNaN(when.getTime())) return 'L’heure n’est pas valide.';
     if (when.getTime() < Date.now() - 60_000) {
-      return 'Pour aujourd’hui, choisissez une heure encore à venir, ou « Maintenant ».';
+      return 'Cette heure est déjà passée.';
     }
   }
   if (!draft.categoryId) return 'Choisissez une catégorie de véhicule.';

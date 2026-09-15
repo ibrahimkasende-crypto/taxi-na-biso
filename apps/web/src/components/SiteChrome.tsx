@@ -6,7 +6,9 @@ import { useEffect, useState } from 'react';
 import { Menu, Shield, X } from 'lucide-react';
 
 import { brand, publicNav } from '@/config/brand';
+import { socialLinks, footerWhatsAppUrl } from '@/config/social';
 import { useScrollProgress } from '@/lib/motion';
+import { WhatsAppIcon } from '@/components/WhatsAppFloat';
 
 export function BrandLogo({
   className,
@@ -139,58 +141,154 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="relative mt-0 bg-ink text-white">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-gradient-to-b from-transparent to-ink" />
-      <div className="tnb-shell relative grid gap-8 py-14 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+    <footer className="relative mt-0 bg-navy text-white">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-gradient-to-b from-transparent to-navy" />
+      <div className="tnb-shell relative grid gap-10 py-16 lg:grid-cols-4">
         <div>
           <Link href="/" className="inline-block">
             <BrandLogo inverted className="h-12 w-auto max-w-[280px] object-contain object-left sm:h-14" />
           </Link>
-          <p className="mt-3 text-white/70">Transport fiable · Service rapide · Disponible 24/7</p>
-          <p className="mt-2 text-white/60">
-            {brand.defaultCity}, {brand.defaultCountry}
+          <p className="mt-4 text-sm font-medium text-taxi">Transport fiable · Service rapide · Disponible 24/7</p>
+          <p className="mt-3 max-w-xs text-sm text-white/65">
+            {brand.tagline} — déplacements à {brand.defaultCity}.
           </p>
         </div>
-        <div>
-          <p className="mb-2 font-semibold">Navigation</p>
-          <ul className="space-y-2 text-white/70">
+        <FooterBlock title="Navigation">
+          <ul className="space-y-2 text-sm text-white/70">
             <li><Link href="/" className="hover:text-white">Accueil</Link></li>
             <li><Link href="/#services" className="hover:text-white">Services</Link></li>
-            <li><Link href="/#flotte" className="hover:text-white">Flotte</Link></li>
-            <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
+            <li><Link href="/#flotte" className="hover:text-white">Notre flotte</Link></li>
             <li><Link href="/#tarifs" className="hover:text-white">Tarifs</Link></li>
-            <li><Link href="/#contact" className="hover:text-white">Contact</Link></li>
+            <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
             <li><Link href="/#reservation" className="hover:text-white">Réserver</Link></li>
           </ul>
-        </div>
-        <div>
-          <p className="mb-2 font-semibold">Légal</p>
-          <ul className="space-y-2 text-white/70">
-            <li><Link href="/conditions" className="hover:text-white">Conditions d’utilisation</Link></li>
-            <li><Link href="/confidentialite" className="hover:text-white">Politique de confidentialité</Link></li>
-            <li><Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link></li>
+        </FooterBlock>
+        <FooterBlock title="Contact">
+          <ul className="space-y-2 text-sm text-white/70">
+            <li>{brand.defaultCity}, RDC</li>
+            <li>
+              <a href={footerWhatsAppUrl()} target="_blank" rel="noreferrer" className="hover:text-white">
+                WhatsApp : +243 974 543 860
+              </a>
+            </li>
+            <li>
+              <a href={`mailto:${brand.supportEmail}`} className="hover:text-white">
+                {brand.supportEmail}
+              </a>
+            </li>
           </ul>
-        </div>
+        </FooterBlock>
         <div>
-          <p className="mb-2 font-semibold">Taxi Na Biso</p>
-          <ul className="space-y-2 text-white/70">
-            <li><Link href="/connexion" className="hover:text-white">Espace client</Link></li>
-            <li><Link href="/chauffeur/connexion" className="hover:text-white">Espace chauffeur</Link></li>
-          </ul>
+          <p className="mb-3 text-sm font-semibold">Suivez-nous</p>
+          <div className="flex flex-wrap gap-2">
+            <SocialCircle label="Facebook" href={socialLinks.facebook.href}>
+              <FacebookMark />
+            </SocialCircle>
+            <SocialCircle label="Instagram" href={socialLinks.instagram.href}>
+              <InstagramMark />
+            </SocialCircle>
+            <a
+              href={footerWhatsAppUrl()}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+              className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:scale-105 hover:bg-[#25D366]"
+            >
+              <WhatsAppIcon className="h-5 w-5" />
+            </a>
+            <SocialCircle label="TikTok" href={socialLinks.tiktok.href}>
+              <TikTokMark />
+            </SocialCircle>
+          </div>
         </div>
       </div>
-      <div className="flex items-center justify-center gap-3 border-t border-white/10 px-4 py-4 text-center text-xs text-white/45">
-        <span>© {new Date().getFullYear()} {brand.appName}.</span>
-        <AdminFooterLink />
+      <div className="tnb-shell flex flex-col gap-3 border-t border-white/10 py-5 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} TAXI NA BISO. Tous droits réservés.</p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link href="/conditions" className="hover:text-white">Conditions d’utilisation</Link>
+          <Link href="/confidentialite" className="hover:text-white">Politique de confidentialité</Link>
+          <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>
+          <AdminFooterLink />
+        </div>
       </div>
     </footer>
+  );
+}
+
+function FooterBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-white/10 pb-3 lg:border-0 lg:pb-0">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between py-2 text-left text-sm font-semibold lg:hidden"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {title}
+        <span aria-hidden>{open ? '−' : '+'}</span>
+      </button>
+      <p className="mb-3 hidden text-sm font-semibold lg:block">{title}</p>
+      <div className={open ? 'block' : 'hidden lg:block'}>{children}</div>
+    </div>
+  );
+}
+
+function SocialCircle({
+  label,
+  href,
+  children,
+}: {
+  label: string;
+  href: string | null;
+  children: React.ReactNode;
+}) {
+  const cls =
+    'grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:scale-105 hover:bg-taxi hover:text-navy';
+  if (!href) {
+    return (
+      <span className={`${cls} cursor-default opacity-40`} title={`${label} — bientôt`} aria-label={`${label} (bientôt)`}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noreferrer" aria-label={label} className={cls}>
+      {children}
+    </a>
+  );
+}
+
+function FacebookMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+      <path d="M14 9h3V6h-3c-1.7 0-3 1.4-3 3v2H9v3h2v7h3v-7h2.6l.4-3H14V9z" />
+    </svg>
+  );
+}
+
+function InstagramMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <rect x="4" y="4" width="16" height="16" rx="5" />
+      <circle cx="12" cy="12" r="3.5" />
+      <circle cx="17.2" cy="6.8" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TikTokMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+      <path d="M14.2 4c.4 2.4 1.8 4 4.3 4.2v3c-1.5 0-2.9-.5-4.2-1.4v6.6c0 3.2-2.5 5.6-5.7 5.6S2.9 19.6 2.9 16.4c0-3.1 2.4-5.6 5.5-5.7v3.1c-1.4.1-2.5 1.3-2.5 2.6 0 1.5 1.2 2.6 2.7 2.6s2.6-1.2 2.6-2.6V4h3z" />
+    </svg>
   );
 }
 
 function AdminFooterLink() {
   return (
     <Link
-      href="/admin"
+      href="/admin/login"
       aria-label="Administration"
       title="Administration"
       className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-white/35 transition hover:bg-white/5 hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"

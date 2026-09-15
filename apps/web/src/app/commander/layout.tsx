@@ -1,4 +1,5 @@
 import { SiteFooter, SiteHeader } from '@/components/SiteChrome';
+import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 
 export default function CommanderLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -6,6 +7,7 @@ export default function CommanderLayout({ children }: { children: React.ReactNod
       <SiteHeader />
       {children}
       <SiteFooter />
+      <WhatsAppFloat />
     </>
   );
 }

@@ -131,7 +131,7 @@ export const kinshasaPlaces: readonly KinshasaPlace[] = [
     lat: -4.392,
     lng: 15.322,
     place_id: 'lemba',
-    aliases: ['lemba'],
+    aliases: ['lem', 'lemba'],
   },
   {
     label: 'Kimbanseke',
@@ -186,9 +186,13 @@ function fold(s: string): string {
 
 function scorePlace(place: KinshasaPlace, q: string): number {
   if (!q) return 0;
-  const hay = fold([place.label, place.address, ...place.aliases].join(' '));
   const needle = fold(q);
   if (!needle) return 0;
+  if (place.aliases.some((a) => fold(a) === needle)) return 200 + needle.length;
+  if (fold(place.label) === needle) return 180;
+  if (fold(place.label).startsWith(needle)) return 120 + needle.length;
+  if (place.aliases.some((a) => fold(a).startsWith(needle))) return 90 + needle.length;
+  const hay = fold([place.label, place.address, ...place.aliases].join(' '));
   if (hay.includes(needle)) return needle.length * 4;
   const parts = needle.split(' ').filter(Boolean);
   let n = 0;
@@ -233,6 +237,12 @@ export function searchKinshasaPlaces(query: string): KinshasaPlace[] {
     .slice(0, 8)
     .map((x) => x.p);
 }
+
+export const quickDestinations: readonly KinshasaPlace[] = [
+  kinshasaPlaces.find((p) => p.place_id === 'ndjili')!,
+  kinshasaPlaces.find((p) => p.place_id === 'gombe')!,
+  kinshasaPlaces.find((p) => p.place_id === 'unikin')!,
+];
 
 export function nearestPlace(lat: number, lng: number): KinshasaPlace | null {
   let best: KinshasaPlace | null = null;

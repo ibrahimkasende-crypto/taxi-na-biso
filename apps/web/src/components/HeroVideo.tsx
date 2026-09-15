@@ -85,7 +85,7 @@ export function HeroVideo() {
       />
 
       <div className="tnb-shell relative z-10 flex min-h-[90svh] flex-col justify-end pb-16 pt-28 lg:min-h-[100svh] lg:justify-center lg:pb-24 lg:pt-32">
-        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-center">
+          <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)] lg:items-center">
           <div>
             <p className="animate-fade-up text-sm font-semibold uppercase tracking-[0.22em] text-white/80">
               {brand.appName}

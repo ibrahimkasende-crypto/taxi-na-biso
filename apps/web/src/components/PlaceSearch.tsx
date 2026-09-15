@@ -1,7 +1,7 @@
 'use client';
 
 import { MapPin, Search } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 
 import { rememberPlace, searchKinshasaPlaces, type KinshasaPlace } from '@/config/places';
 import { placeFromKinshasa, type RidePlace } from '@/lib/ride-request';
@@ -13,6 +13,10 @@ export function PlaceSearch({
   onChange,
   onUseGps,
   gpsBusy,
+  chips,
+  autoFocus,
+  onPicked,
+  hideLabel,
 }: {
   label: string;
   placeholder: string;
@@ -20,81 +24,138 @@ export function PlaceSearch({
   onChange: (place: RidePlace | null) => void;
   onUseGps?: () => void;
   gpsBusy?: boolean;
+  chips?: readonly KinshasaPlace[];
+  autoFocus?: boolean;
+  onPicked?: (place: RidePlace) => void;
+  hideLabel?: boolean;
 }) {
   const id = useId();
-  const [query, setQuery] = useState(value?.label ?? '');
+  const listId = `${id}-list`;
+  const [typed, setTyped] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setQuery(value?.label ?? '');
-  }, [value?.label]);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
-
-  const results = useMemo(() => searchKinshasaPlaces(query), [query]);
+  const query = typed ?? value?.label ?? '';
+  const results = useMemo(() => searchKinshasaPlaces(query).slice(0, 6), [query]);
 
   function pick(place: KinshasaPlace) {
     rememberPlace(place);
-    onChange(placeFromKinshasa(place));
-    setQuery(place.label);
+    const next = placeFromKinshasa(place);
+    onChange(next);
+    setTyped(null);
     setOpen(false);
+    onPicked?.(next);
+  }
+
+  function onKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setOpen(true);
+      setHi((i) => Math.min(results.length - 1, i + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHi((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Enter') {
+      const hit = results[hi];
+      if (open && hit) {
+        e.preventDefault();
+        pick(hit);
+      }
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
   }
 
   return (
-    <div ref={wrap} className="relative">
-      <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted" htmlFor={id}>
-        {label}
-      </label>
-      <div className="mt-1 flex gap-2">
-        <span className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand" />
+    <div
+      ref={wrap}
+      className="relative"
+      onBlur={(e) => {
+        if (!wrap.current?.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      {hideLabel ? (
+        <label className="sr-only" htmlFor={id}>
+          {label}
+        </label>
+      ) : (
+        <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted" htmlFor={id}>
+          {label}
+        </label>
+      )}
+      <div className={hideLabel ? '' : 'mt-1'}>
+        <span className="relative block">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand" aria-hidden />
           <input
             id={id}
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={open && results[hi] ? `${listId}-${results[hi]!.place_id}` : undefined}
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
+              setTyped(e.target.value);
               setOpen(true);
+              setHi(0);
               if (value) onChange(null);
             }}
             onFocus={() => setOpen(true)}
+            onKeyDown={onKey}
             placeholder={placeholder}
             autoComplete="off"
-            className="min-h-12 w-full rounded-xl border border-black/10 bg-[#f7f5f2] px-10 text-ink outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/20"
+            autoFocus={autoFocus}
+            className="min-h-14 w-full rounded-2xl border border-black/10 bg-[#f7f5f2] pl-12 pr-4 text-base text-ink outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/20"
           />
         </span>
-        {onUseGps ? (
-          <button
-            type="button"
-            onClick={onUseGps}
-            disabled={gpsBusy}
-            className="inline-flex min-h-12 shrink-0 items-center gap-1 rounded-xl border border-black/10 px-3 text-sm font-medium text-ink hover:bg-white disabled:opacity-60"
-          >
-            <MapPin className="h-4 w-4 text-brand" />
-            {gpsBusy ? '…' : 'Ma position'}
-          </button>
-        ) : null}
       </div>
-      {open ? (
-        <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-2xl border border-black/10 bg-white py-1 shadow-lg">
+      {chips && chips.length > 0 && !value && !typed ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {chips.map((p) => (
+            <button
+              key={p.place_id}
+              type="button"
+              onClick={() => pick(p)}
+              className="min-h-10 rounded-full border border-black/10 bg-white px-3 text-sm hover:border-brand/40"
+            >
+              {p.place_id === 'ndjili' ? 'Aéroport N’djili' : p.place_id === 'unikin' ? 'UNIKIN' : p.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {onUseGps ? (
+        <button
+          type="button"
+          onClick={onUseGps}
+          disabled={gpsBusy}
+          className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white text-sm font-semibold disabled:opacity-60"
+        >
+          <MapPin className="h-4 w-4 text-brand" />
+          {gpsBusy ? 'Localisation…' : 'Utiliser ma position actuelle'}
+        </button>
+      ) : null}
+      {open && (typed !== null || query.length > 0 || !chips) ? (
+        <ul
+          id={listId}
+          role="listbox"
+          className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-black/8 bg-white/98 py-1 shadow-xl"
+        >
           {results.length === 0 ? (
-            <li className="px-3 py-3 text-sm text-muted">Aucun lieu. Continuez à taper.</li>
+            <li className="px-4 py-3 text-sm text-muted">Aucun lieu. Continuez à taper.</li>
           ) : (
-            results.map((p) => (
-              <li key={p.place_id}>
+            results.map((p, i) => (
+              <li key={p.place_id} id={`${listId}-${p.place_id}`} role="option" aria-selected={i === hi}>
                 <button
                   type="button"
-                  className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-orange-50"
+                  className={`flex min-h-12 w-full items-start gap-3 px-3 py-2.5 text-left ${i === hi ? 'bg-orange-50' : 'hover:bg-orange-50/70'}`}
+                  onMouseEnter={() => setHi(i)}
                   onClick={() => pick(p)}
                 >
-                  <span className="text-sm font-medium text-ink">{p.label}</span>
-                  <span className="text-xs text-muted">{p.address}</span>
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
+                  <span>
+                    <span className="block text-sm font-medium text-ink">{p.label}</span>
+                    <span className="block text-xs text-muted">{p.address}</span>
+                  </span>
                 </button>
               </li>
             ))

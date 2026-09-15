@@ -1,29 +1,40 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 
+import { DatePicker } from '@/components/DatePicker';
 import { PlaceSearch } from '@/components/PlaceSearch';
-import { fleetCategories, fleetCategoryById, type FleetCategoryId, WHATSAPP_DISPLAY } from '@/config/fleet';
-import { nearestPlace } from '@/config/places';
+import { TimePicker } from '@/components/TimePicker';
+import { fleetCategories, fleetCategoryById, fleetImageForCategory, type FleetCategoryId } from '@/config/fleet';
+import { nearestPlace, quickDestinations } from '@/config/places';
 import { bookingDb } from '@/lib/booking-db';
-import { getSupabaseBrowser } from '@/lib/supabase-browser';
+import { usePrefersReducedMotion } from '@/lib/motion';
 import {
   buildWhatsAppMessage,
   clearDraft,
   combineKinshasaDateTime,
-  formatLongDate,
+  formatWeekdayLong,
   isImmediate,
+  isPlausiblePhone,
+  isTimePastOnDate,
+  normalizePhone,
   nowHHMM,
   readDraft,
   todayISODate,
   validateRideDraft,
   writeDraft,
   type RideDraft,
+  type RidePlace,
 } from '@/lib/ride-request';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { officialWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useLiveFleet } from '@/lib/use-live-fleet';
+
+type Step = 'dropoff' | 'pickup' | 'when' | 'date' | 'time' | 'vehicle' | 'contact' | 'recap' | 'done';
+
+const MAIN: Step[] = ['dropoff', 'pickup', 'when', 'vehicle', 'contact'];
 
 const emptyDraft = (): RideDraft => ({
   name: '',
@@ -36,24 +47,34 @@ const emptyDraft = (): RideDraft => ({
   categoryId: 'confort',
 });
 
+function hasIdentity(d: RideDraft): boolean {
+  return Boolean(d.name.trim() && isPlausiblePhone(d.phone));
+}
+
 export function RideRequestForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
+  const reduce = usePrefersReducedMotion();
   const [draft, setDraft] = useState<RideDraft>(emptyDraft);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<Step>('dropoff');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
-  const [recap, setRecap] = useState(false);
-  const [success, setSuccess] = useState<{ reference: string; status: string; whatsAppUrl: string } | null>(null);
+  const [gpsDenied, setGpsDenied] = useState(false);
+  const [success, setSuccess] = useState<{ reference: string; whatsAppUrl: string } | null>(null);
   const [isRider, setIsRider] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
+  const titleId = useId();
+  const cats = useLiveFleet();
+  const cat = cats.find((c) => c.id === draft.categoryId) ?? fleetCategoryById(draft.categoryId);
+  const expanded = compact && step !== 'dropoff' && step !== 'done';
 
   useEffect(() => {
-    const cat = params.get('cat') as FleetCategoryId | null;
+    const catParam = params.get('cat') as FleetCategoryId | null;
     const stored = readDraft();
     setDraft((prev) => {
       const next = { ...prev, ...stored };
-      if (cat && fleetCategories.some((c) => c.id === cat)) next.categoryId = cat;
+      if (catParam && fleetCategories.some((c) => c.id === catParam)) next.categoryId = catParam;
       return { ...emptyDraft(), ...next, date: next.date || todayISODate() };
     });
     const sync = () => {
@@ -92,11 +113,27 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
     };
   }, []);
 
-  const cats = useLiveFleet();
-  const cat = cats.find((c) => c.id === draft.categoryId) ?? fleetCategoryById(draft.categoryId);
-  const immediate = isImmediate(draft);
-  const cta = immediate ? 'Commander la course' : 'Réserver la course';
-  const timeLabel = draft.timeMode === 'now' ? 'Maintenant' : draft.time;
+  useEffect(() => {
+    document.body.dataset.bookingOpen = expanded ? '1' : '0';
+    return () => {
+      delete document.body.dataset.bookingOpen;
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
+  function go(next: Step) {
+    setError(null);
+    setStep(next);
+    setAnimKey((k) => k + 1);
+  }
 
   function patch(partial: Partial<RideDraft>) {
     setDraft((d) => {
@@ -107,9 +144,14 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
     setError(null);
   }
 
+  function afterVehicle(d = draft) {
+    go(hasIdentity(d) ? 'recap' : 'contact');
+  }
+
   async function useGps() {
     if (!navigator.geolocation) {
-      setError('La géolocalisation n’est pas disponible. Recherchez votre départ.');
+      setGpsDenied(true);
+      setError('Localisation non autorisée. Recherchez votre point de départ.');
       return;
     }
     setGpsBusy(true);
@@ -124,7 +166,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=fr`,
           );
           if (res.ok) {
-            const geo = (await res.json()) as { locality?: string; city?: string; principalSubdivision?: string };
+            const geo = (await res.json()) as { locality?: string; city?: string };
             const zone = [geo.locality, geo.city || 'Kinshasa'].filter(Boolean).join(', ');
             if (zone) {
               label = zone;
@@ -138,292 +180,429 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
             address = near.address;
           }
         }
-        patch({
-          pickup: {
-            label,
-            address,
-            lat: latitude,
-            lng: longitude,
-            place_id: `gps:${latitude.toFixed(5)},${longitude.toFixed(5)}`,
-          },
-        });
+        const pickup: RidePlace = {
+          label,
+          address,
+          lat: latitude,
+          lng: longitude,
+          place_id: `gps:${latitude.toFixed(5)},${longitude.toFixed(5)}`,
+        };
+        patch({ pickup });
         setGpsBusy(false);
+        setGpsDenied(false);
+        window.setTimeout(() => go('when'), reduce ? 0 : 180);
       },
       () => {
         setGpsBusy(false);
-        setError('Recherchez votre point de départ');
+        setGpsDenied(true);
+        setError(null);
       },
       { enableHighAccuracy: true, timeout: 12000 },
     );
   }
 
-  function goRecap() {
-    if (compact && step === 1) {
-      if (!draft.pickup || !draft.dropoff) {
-        setError('Indiquez le départ et la destination.');
-        return;
-      }
-      setStep(2);
-      setError(null);
-      return;
-    }
-    const msg = validateRideDraft(draft);
+  async function confirm() {
+    const normalized = { ...draft, phone: normalizePhone(draft.phone) };
+    patch({ phone: normalized.phone });
+    const msg = validateRideDraft(normalized);
     if (msg) {
       setError(msg);
-      if (compact) setStep(2);
-      return;
-    }
-    setRecap(true);
-  }
-
-  async function confirmAndWhatsApp() {
-    const msg = validateRideDraft(draft);
-    if (msg) {
-      setError(msg);
-      setRecap(false);
       return;
     }
     setBusy(true);
     setError(null);
-    writeDraft(draft);
     const scheduledFor =
-      draft.timeMode === 'now' ? new Date().toISOString() : combineKinshasaDateTime(draft.date, draft.time).toISOString();
+      normalized.timeMode === 'now' ? new Date().toISOString() : combineKinshasaDateTime(normalized.date, normalized.time).toISOString();
     try {
       const supabase = bookingDb(getSupabaseBrowser());
       const { data, error: rpcError } = await supabase.rpc('submit_booking_request', {
         payload: {
-          customer_name: draft.name.trim(),
-          customer_phone: draft.phone.trim(),
-          pickup_label: draft.pickup!.label,
-          pickup_address: draft.pickup!.address,
-          pickup_lat: draft.pickup!.lat,
-          pickup_lng: draft.pickup!.lng,
-          pickup_place_id: draft.pickup!.place_id,
-          dropoff_label: draft.dropoff!.label,
-          dropoff_address: draft.dropoff!.address,
-          dropoff_lat: draft.dropoff!.lat,
-          dropoff_lng: draft.dropoff!.lng,
-          dropoff_place_id: draft.dropoff!.place_id,
+          customer_name: normalized.name.trim(),
+          customer_phone: normalized.phone.trim(),
+          pickup_label: normalized.pickup!.label,
+          pickup_address: normalized.pickup!.address,
+          pickup_lat: normalized.pickup!.lat,
+          pickup_lng: normalized.pickup!.lng,
+          pickup_place_id: normalized.pickup!.place_id,
+          dropoff_label: normalized.dropoff!.label,
+          dropoff_address: normalized.dropoff!.address,
+          dropoff_lat: normalized.dropoff!.lat,
+          dropoff_lng: normalized.dropoff!.lng,
+          dropoff_place_id: normalized.dropoff!.place_id,
           scheduled_for: scheduledFor,
-          is_now: draft.timeMode === 'now',
-          category: draft.categoryId,
+          is_now: normalized.timeMode === 'now',
+          category: normalized.categoryId,
         },
       });
       if (rpcError) throw rpcError;
-      const row = data as { reference?: string; status?: string } | null;
+      const row = data as { reference?: string } | null;
       const reference = row?.reference ?? `TNB-${todayISODate().replace(/-/g, '')}-TEMP`;
       const message = buildWhatsAppMessage({
         reference,
-        name: draft.name.trim(),
-        phone: draft.phone.trim(),
-        pickup: draft.pickup!,
-        dropoff: draft.dropoff!,
-        date: draft.date,
-        timeLabel,
-        categoryId: draft.categoryId,
+        name: normalized.name.trim(),
+        phone: normalized.phone.trim(),
+        pickup: normalized.pickup!,
+        dropoff: normalized.dropoff!,
+        date: normalized.date,
+        timeLabel: normalized.timeMode === 'now' ? 'Maintenant' : normalized.time,
+        categoryId: normalized.categoryId,
       });
-      const wa = officialWhatsAppUrl(message);
-      setSuccess({ reference, status: row?.status ?? 'pending', whatsAppUrl: wa });
-      setRecap(false);
-      openWhatsApp(wa);
+      setSuccess({ reference, whatsAppUrl: officialWhatsAppUrl(message) });
+      go('done');
     } catch (err) {
       console.error('[booking-request]', err);
-      setError('Impossible d’envoyer votre demande pour le moment. Réessayez.');
+      setError('Nous n’avons pas pu enregistrer votre demande. Vos informations sont conservées, veuillez réessayer.');
     } finally {
       setBusy(false);
     }
   }
 
-  const fieldCls =
-    'mt-1 min-h-12 w-full rounded-xl border border-black/10 bg-[#f7f5f2] px-3 text-ink outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/20';
+  const mainIndex = Math.max(
+    0,
+    MAIN.indexOf(step === 'date' || step === 'time' ? 'when' : step === 'recap' || step === 'done' ? 'contact' : step),
+  );
 
-  if (success) {
-    return (
-      <div className="w-full rounded-[1.75rem] bg-white/95 p-6 shadow-[0_18px_50px_rgba(17,24,39,0.12)]">
-        <p className="text-sm font-medium text-brand">Demande envoyée</p>
-        <h2 className="mt-1 text-xl font-semibold text-ink">Votre demande de course a bien été transmise.</h2>
-        <p className="mt-2 text-sm text-muted">Elle est actuellement en attente de confirmation.</p>
-        <dl className="mt-4 space-y-1 text-sm">
-          <div className="flex justify-between gap-3"><dt className="text-muted">Référence</dt><dd className="font-medium">{success.reference}</dd></div>
-          <div className="flex justify-between gap-3"><dt className="text-muted">Statut</dt><dd className="font-medium">En attente</dd></div>
-          <div className="flex justify-between gap-3"><dt className="text-muted">Départ</dt><dd className="text-right">{draft.pickup?.label}</dd></div>
-          <div className="flex justify-between gap-3"><dt className="text-muted">Destination</dt><dd className="text-right">{draft.dropoff?.label}</dd></div>
-        </dl>
-        <p className="mt-4 text-xs text-muted">
-          WhatsApp s’ouvre avec le message prêt. Vérifiez-le puis appuyez sur Envoyer. Rien n’est envoyé à votre place.
-        </p>
-        <button type="button" className="btn-primary mt-5 w-full" onClick={() => openWhatsApp(success.whatsAppUrl)}>
-          Rouvrir WhatsApp
-        </button>
+  const whenLabel = isImmediate(draft)
+    ? 'Aujourd’hui · Maintenant'
+    : `${formatWeekdayLong(draft.date)} · ${draft.time}`;
+
+  const phoneNational = draft.phone.replace(/^\+?243/, '').replace(/\D/g, '');
+
+  const cardCls =
+    'tnb-book-card w-full min-h-[20rem] rounded-[1.75rem] p-5 text-ink transition-[min-height] duration-300 sm:p-6';
+
+  const body = (
+    <div key={animKey} className={reduce ? '' : 'tnb-step-in'}>
+      {step !== 'dropoff' && step !== 'done' ? (
         <button
           type="button"
-          className="mt-2 w-full min-h-11 rounded-xl border border-black/10 text-sm"
+          className="mb-3 inline-flex min-h-10 items-center gap-1 text-sm text-muted hover:text-ink"
           onClick={() => {
-            clearDraft();
-            router.push(isRider ? '/client/demandes' : '/connexion?next=/client/demandes');
+            if (step === 'pickup') go('dropoff');
+            else if (step === 'when') go('pickup');
+            else if (step === 'date') go('when');
+            else if (step === 'time') go('date');
+            else if (step === 'vehicle') go(draft.timeMode === 'now' ? 'when' : 'time');
+            else if (step === 'contact') go('vehicle');
+            else if (step === 'recap') go(hasIdentity(draft) ? 'vehicle' : 'contact');
           }}
+          aria-label="Retour"
         >
-          Suivre ma demande
+          <ArrowLeft className="h-4 w-4" />
+          Retour
         </button>
-      </div>
-    );
-  }
+      ) : null}
 
-  return (
-    <form
-      className="w-full rounded-[1.75rem] bg-white/95 p-5 shadow-[0_18px_50px_rgba(17,24,39,0.12)] backdrop-blur-md sm:p-6"
-      onSubmit={(e) => {
-        e.preventDefault();
-        goRecap();
-      }}
-    >
-      <h2 className="text-lg font-semibold text-ink">Réserver une course</h2>
-      <p className="mt-1 text-sm text-muted">Kinshasa · réponse via WhatsApp {WHATSAPP_DISPLAY}</p>
-
-      <div className={compact && step === 2 ? 'hidden lg:block' : ''}>
-        <div className="mt-4 space-y-3">
-          <PlaceSearch
-            label="D’où partez-vous ?"
-            placeholder="unik, gombe, aéroport…"
-            value={draft.pickup}
-            onChange={(pickup) => patch({ pickup })}
-            onUseGps={useGps}
-            gpsBusy={gpsBusy}
-          />
-          <PlaceSearch
-            label="Où allez-vous ?"
-            placeholder="victoire, limete…"
-            value={draft.dropoff}
-            onChange={(dropoff) => patch({ dropoff })}
-          />
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-            Date
-            <input
-              type="date"
-              min={todayISODate()}
-              value={draft.date}
-              onChange={(e) => patch({ date: e.target.value })}
-              className={fieldCls}
+      {step !== 'done' ? (
+        <div className="mb-4 flex gap-1.5" aria-hidden>
+          {MAIN.map((s, i) => (
+            <span
+              key={s}
+              className={`h-1.5 flex-1 rounded-full ${i <= mainIndex ? 'bg-taxi' : 'bg-black/10'}`}
             />
-          </label>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Heure</p>
-            <div className="mt-1 flex gap-2">
-              <button
-                type="button"
-                className={`min-h-12 flex-1 rounded-xl border text-sm font-medium ${
-                  draft.timeMode === 'now' ? 'border-brand bg-orange-50 text-brand' : 'border-black/10'
-                }`}
-                onClick={() => patch({ timeMode: 'now', time: nowHHMM() })}
-              >
-                Maintenant
-              </button>
-            </div>
-            <input
-              type="time"
-              value={draft.time}
-              onChange={(e) => patch({ timeMode: 'scheduled', time: e.target.value })}
-              className={`${fieldCls} mt-2`}
+          ))}
+        </div>
+      ) : null}
+
+      {step === 'dropoff' ? (
+        <>
+          <h2 id={titleId} className="text-xl font-semibold sm:text-2xl">
+            Où souhaitez-vous aller ?
+          </h2>
+          <div className="mt-4">
+            <PlaceSearch
+              hideLabel
+              autoFocus={!compact}
+              label="Où souhaitez-vous aller ?"
+              placeholder="Université, quartier, hôtel, aéroport..."
+              value={draft.dropoff}
+              chips={quickDestinations}
+              onChange={(dropoff) => patch({ dropoff })}
+              onPicked={() => window.setTimeout(() => go('pickup'), reduce ? 0 : 200)}
             />
           </div>
-        </div>
-      </div>
+          <button
+            type="button"
+            className="btn-primary mt-5 w-full"
+            disabled={!draft.dropoff}
+            onClick={() => draft.dropoff && go('pickup')}
+          >
+            Continuer
+          </button>
+        </>
+      ) : null}
 
-      <div className={compact && step === 1 ? 'hidden lg:block' : ''}>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+      {step === 'pickup' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">D’où partez-vous ?</h2>
+          {gpsDenied ? (
+            <p className="mt-2 text-sm text-muted">Localisation non autorisée. Recherchez votre point de départ.</p>
+          ) : null}
+          <div className="mt-4">
+            <PlaceSearch
+              hideLabel
+              autoFocus={gpsDenied}
+              label="D’où partez-vous ?"
+              placeholder="Rechercher mon point de départ"
+              value={draft.pickup}
+              onChange={(pickup) => patch({ pickup })}
+              onUseGps={useGps}
+              gpsBusy={gpsBusy}
+              onPicked={() => window.setTimeout(() => go('when'), reduce ? 0 : 200)}
+            />
+          </div>
+          {draft.pickup && !gpsBusy ? (
+            <button type="button" className="btn-primary mt-5 w-full" onClick={() => go('when')}>
+              Continuer
+            </button>
+          ) : null}
+        </>
+      ) : null}
+
+      {step === 'when' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Quand souhaitez-vous partir ?</h2>
+          <div className="mt-5 grid gap-3">
+            <button
+              type="button"
+              className="min-h-16 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi"
+              onClick={() => {
+                patch({ timeMode: 'now', date: todayISODate(), time: nowHHMM() });
+                window.setTimeout(() => go('vehicle'), reduce ? 0 : 180);
+              }}
+            >
+              <span className="block text-lg font-semibold">Maintenant</span>
+              <span className="text-sm text-muted">Dès qu’un chauffeur est disponible</span>
+            </button>
+            <button
+              type="button"
+              className="min-h-16 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi"
+              onClick={() => {
+                patch({ timeMode: 'scheduled' });
+                go('date');
+              }}
+            >
+              <span className="block text-lg font-semibold">Planifier</span>
+              <span className="text-sm text-muted">Choisir une date et une heure</span>
+            </button>
+          </div>
+        </>
+      ) : null}
+
+      {step === 'date' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Quelle date ?</h2>
+          <div className="mt-4">
+            <DatePicker
+              value={draft.date}
+              onChange={(date) => {
+                patch({ date, timeMode: 'scheduled' });
+                window.setTimeout(() => go('time'), reduce ? 0 : 200);
+              }}
+            />
+          </div>
+        </>
+      ) : null}
+
+      {step === 'time' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">À quelle heure ?</h2>
+          <div className="mt-4">
+            <TimePicker
+              date={draft.date}
+              value={draft.time}
+              onChange={(time) => {
+                if (isTimePastOnDate(draft.date, time)) {
+                  setError('Cette heure est déjà passée.');
+                  return;
+                }
+                patch({ time, timeMode: 'scheduled' });
+                window.setTimeout(() => go('vehicle'), reduce ? 0 : 200);
+              }}
+            />
+          </div>
+          {error ? (
+            <p className="mt-3 text-sm text-danger" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+
+      {step === 'vehicle' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Quel véhicule vous convient ?</h2>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-2 snap-x">
+            {cats.map((c) => {
+              const selected = draft.categoryId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    const next = { ...draft, categoryId: c.id };
+                    patch({ categoryId: c.id });
+                    window.setTimeout(() => afterVehicle(next), reduce ? 0 : 220);
+                  }}
+                  className={`w-40 shrink-0 snap-start overflow-hidden rounded-2xl border-2 text-left ${
+                    selected ? 'border-taxi' : 'border-black/8'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={fleetImageForCategory(c.id)} alt="" className="h-24 w-full object-cover" />
+                  <span className="block px-3 py-2">
+                    <span className="flex items-center justify-between gap-1">
+                      <span className="font-semibold">{c.label}</span>
+                      {selected ? <Check className="h-4 w-4 text-navy" aria-hidden /> : null}
+                    </span>
+                    <span className="block text-sm text-muted">{c.hourlyUsd} $ / heure</span>
+                    <span className="block text-[11px] text-muted">{c.vehicles[0]}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted">Journée : {cat.dailyUsd} $ pour {cat.label}. Détail au récapitulatif.</p>
+        </>
+      ) : null}
+
+      {step === 'contact' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Presque terminé 👋</h2>
+          <p className="mt-1 text-sm text-muted">Comment pouvons-nous vous contacter ?</p>
+          <label className="mt-4 block text-sm font-medium">
             Nom
             <input
               value={draft.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder="Votre nom"
-              className={fieldCls}
               autoComplete="name"
+              className="mt-1 min-h-12 w-full rounded-2xl border border-black/10 bg-[#f7f5f2] px-3 outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/20"
             />
           </label>
-          <label className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-            Téléphone
-            <input
-              value={draft.phone}
-              onChange={(e) => patch({ phone: e.target.value })}
-              placeholder="+243 …"
-              className={fieldCls}
-              inputMode="tel"
-              autoComplete="tel"
-            />
+          <label className="mt-3 block text-sm font-medium">
+            Téléphone / WhatsApp
+            <span className="mt-1 flex overflow-hidden rounded-2xl border border-black/10 bg-[#f7f5f2] focus-within:ring-2 focus-within:ring-brand/20">
+              <span className="flex min-h-12 items-center px-3 text-sm text-muted">🇨🇩 +243</span>
+              <input
+                value={phoneNational}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw.trim().startsWith('+') || raw.startsWith('00')) patch({ phone: normalizePhone(raw) });
+                  else patch({ phone: normalizePhone(`+243${raw.replace(/\D/g, '')}`) });
+                }}
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="974 543 860"
+                className="min-h-12 min-w-0 flex-1 bg-transparent px-2 outline-none"
+              />
+            </span>
           </label>
+          <button
+            type="button"
+            className="btn-primary mt-5 w-full"
+            disabled={!hasIdentity({ ...draft, phone: normalizePhone(draft.phone) })}
+            onClick={() => go('recap')}
+          >
+            Continuer
+          </button>
+        </>
+      ) : null}
+
+      {step === 'recap' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Votre course</h2>
+          <ul className="mt-4 divide-y divide-black/5 text-sm">
+            <RecapRow label="Départ" value={draft.pickup?.label ?? ''} onEdit={() => go('pickup')} />
+            <RecapRow label="Destination" value={draft.dropoff?.label ?? ''} onEdit={() => go('dropoff')} />
+            <RecapRow label="Quand" value={whenLabel} onEdit={() => go('when')} />
+            <RecapRow label="Véhicule" value={`${cat.label} · ${cat.hourlyUsd} $/h`} onEdit={() => go('vehicle')} />
+            <RecapRow label="Client" value={draft.name} onEdit={() => go('contact')} />
+            <RecapRow label="Téléphone" value={normalizePhone(draft.phone)} onEdit={() => go('contact')} />
+          </ul>
+          {error ? (
+            <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-danger" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button type="button" disabled={busy} className="btn-primary mt-5 w-full" onClick={() => void confirm()}>
+            {busy ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Création de votre demande…
+              </span>
+            ) : (
+              'Confirmer la course'
+            )}
+          </button>
+        </>
+      ) : null}
+
+      {step === 'done' && success ? (
+        <div className="text-center">
+          <p className="text-3xl" aria-hidden>
+            ✓
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">Demande prête !</h2>
+          <p className="mt-2 text-sm text-muted">Votre demande a été enregistrée.</p>
+          <p className="mt-3 text-sm">
+            Référence : <strong>{success.reference}</strong>
+          </p>
+          <button
+            type="button"
+            className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#25D366] px-5 font-semibold text-white"
+            onClick={() => openWhatsApp(success.whatsAppUrl)}
+          >
+            Ouvrir WhatsApp
+          </button>
+          <p className="mt-3 text-xs text-muted">
+            Une conversation avec TAXI NA BISO va s’ouvrir avec votre demande déjà préparée. Rien n’est envoyé à votre place.
+          </p>
+          <button
+            type="button"
+            className="mt-3 w-full min-h-11 text-sm text-brand"
+            onClick={() => {
+              clearDraft();
+              router.push(isRider ? '/client/demandes' : '/connexion?next=/client/demandes');
+            }}
+          >
+            Suivre ma demande
+          </button>
         </div>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Type de véhicule</p>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {cats.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => patch({ categoryId: c.id })}
-              className={`min-h-12 shrink-0 rounded-xl border px-3 text-left text-sm ${
-                draft.categoryId === c.id ? 'border-brand bg-orange-50' : 'border-black/10'
-              }`}
-            >
-              <span className="block font-medium">{c.label}</span>
-              <span className="text-xs text-muted">{c.hourlyUsd} $/h</span>
-            </button>
-          ))}
+      ) : null}
+    </div>
+  );
+
+  const card = (
+    <div className={cardCls} role="form" aria-labelledby={titleId}>
+      {body}
+    </div>
+  );
+
+  if (expanded) {
+    return (
+      <div className="lg:contents">
+        <div className="fixed inset-0 z-40 bg-navy/50 lg:hidden" />
+        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:pb-0">
+          {card}
         </div>
       </div>
+    );
+  }
 
-      {error ? (
-        <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-danger" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <button type="submit" disabled={busy} className="btn-primary mt-5 w-full">
-        {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : compact && step === 1 ? 'Continuer' : cta}
-      </button>
-      {compact && step === 2 ? (
-        <button type="button" className="mt-2 w-full text-sm text-brand" onClick={() => setStep(1)}>
-          Modifier le trajet
-        </button>
-      ) : null}
-
-      {recap ? (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/50 p-4 sm:items-center">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold">Votre demande</h3>
-            <dl className="mt-4 space-y-2 text-sm">
-              <Row k="Client" v={draft.name} />
-              <Row k="Téléphone" v={draft.phone} />
-              <Row k="Départ" v={draft.pickup?.label ?? ''} />
-              <Row k="Destination" v={draft.dropoff?.label ?? ''} />
-              <Row k="Date" v={formatLongDate(draft.date)} />
-              <Row k="Heure" v={timeLabel} />
-              <Row k="Catégorie" v={cat.label} />
-              <Row k="Tarif de référence" v={`${cat.hourlyUsd} $ / heure · ${cat.dailyUsd} $ / journée`} />
-            </dl>
-            <p className="mt-3 text-xs text-muted">Aucun prix de trajet n’est calculé : ces tarifs sont à l’heure et à la journée.</p>
-            <div className="mt-5 flex flex-col gap-2">
-              <button type="button" disabled={busy} className="btn-primary w-full" onClick={() => void confirmAndWhatsApp()}>
-                {busy ? 'Envoi de la demande…' : 'Confirmer sur WhatsApp'}
-              </button>
-              <button type="button" className="min-h-11 rounded-xl border border-black/10 text-sm" onClick={() => setRecap(false)}>
-                Modifier
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </form>
-  );
+  return card;
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function RecapRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-muted">{k}</dt>
-      <dd className="text-right font-medium text-ink">{v}</dd>
-    </div>
+    <li className="flex items-start justify-between gap-3 py-3">
+      <span>
+        <span className="block text-xs text-muted">{label}</span>
+        <span className="font-medium">{value}</span>
+      </span>
+      <button type="button" className="text-xs font-medium text-brand" onClick={onEdit}>
+        Modifier
+      </button>
+    </li>
   );
 }
 
@@ -432,6 +611,8 @@ export function scrollToReservation(categoryId?: FleetCategoryId) {
   url.hash = 'reservation';
   if (categoryId) url.searchParams.set('cat', categoryId);
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-  document.getElementById('reservation')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  document.getElementById('reservation')?.scrollIntoView({
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+  });
   window.dispatchEvent(new Event('tnb:category'));
 }

@@ -76,6 +76,22 @@ export const fleetCategories: readonly FleetCategory[] = [
   },
 ] as const;
 
+export function fleetImageForCategory(id: FleetCategoryId): string {
+  switch (id) {
+    case 'basic':
+      return '/images/fleet/basic.jpg';
+    case 'confort':
+      return '/images/fleet/confort.jpg';
+    case 'premium':
+      return '/images/fleet/premium.webp';
+    case 'familiale':
+    case 'familiale_premium':
+      return '/images/fleet/familiale.jpg';
+    case '4x4':
+      return '/admin/taxi-car.png';
+  }
+}
+
 export function fleetCategoryById(id: string | null | undefined): FleetCategory {
   const found = fleetCategories.find((c) => c.id === id);
   if (found) return found;
