@@ -104,7 +104,7 @@ export function HeroVideo() {
             </p>
           </div>
 
-          <div className="animate-fade-up w-full" style={{ animationDelay: '220ms' }}>
+          <div id="reservation" className="animate-fade-up w-full" style={{ animationDelay: '220ms' }}>
             <Suspense fallback={<div className="h-80 rounded-[1.75rem] bg-white/90" />}>
               <RideRequestForm compact />
             </Suspense>

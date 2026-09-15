@@ -237,7 +237,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
 
   if (success) {
     return (
-      <div id="reservation" className="w-full rounded-[1.75rem] bg-white/95 p-6 shadow-[0_18px_50px_rgba(17,24,39,0.12)]">
+      <div className="w-full rounded-[1.75rem] bg-white/95 p-6 shadow-[0_18px_50px_rgba(17,24,39,0.12)]">
         <p className="text-sm font-medium text-brand">Demande envoyée</p>
         <h2 className="mt-1 text-xl font-semibold text-ink">Votre demande de course a bien été transmise.</h2>
         <p className="mt-2 text-sm text-muted">Elle est actuellement en attente de confirmation.</p>
@@ -269,7 +269,6 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
 
   return (
     <form
-      id="reservation"
       className="w-full rounded-[1.75rem] bg-white/95 p-5 shadow-[0_18px_50px_rgba(17,24,39,0.12)] backdrop-blur-md sm:p-6"
       onSubmit={(e) => {
         e.preventDefault();
