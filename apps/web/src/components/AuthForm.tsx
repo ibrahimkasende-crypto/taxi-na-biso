@@ -6,6 +6,7 @@ import { Loader2, Lock, Mail, UserRound } from 'lucide-react';
 
 import { brand } from '@/config/brand';
 import { demoClient, demoDriver, isDevDemo } from '@/config/demoAccounts';
+import { authErrorMessage } from '@/lib/auth-errors';
 import { destinationForRole } from '@/lib/redirect';
 import { homeForRole } from '@/lib/roles';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
@@ -81,7 +82,7 @@ export function AuthForm({
       router.replace(dest);
       router.refresh();
     } catch (err) {
-      setError((err as Error).message);
+      setError(authErrorMessage(err));
     } finally {
       setBusy(false);
     }

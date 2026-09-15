@@ -37,12 +37,15 @@ additional_redirect_urls = [
   "http://localhost:3000",
   "http://127.0.0.1:3001",
   "http://localhost:3001",
+  "https://taxinabiso.newsystemcorps.com",
+  "https://taxinabiso.newsystemcorps.com/**",
   "openride-rider://",
   "openride-driver://",
   "taxinabiso://",
 ]
-# Production (Supabase Cloud dashboard, pas ce fichier local) :
+# Production Cloud : Site URL + Redirect URLs dans le dashboard Auth
 #   https://taxinabiso.newsystemcorps.com
+#   https://taxinabiso.newsystemcorps.com/**
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false

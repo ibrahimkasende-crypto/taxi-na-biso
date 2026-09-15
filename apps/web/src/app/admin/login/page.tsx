@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { demoAdmin, isDevDemo } from '@/config/demoAccounts';
+import { authErrorMessage } from '@/lib/auth-errors';
 import { destinationForRole } from '@/lib/redirect';
 import { homeForRole, isStaffRole } from '@/lib/roles';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
@@ -40,7 +41,7 @@ function LoginForm() {
       }
       window.location.assign(destinationForRole(role, next, '/admin'));
     } catch (err) {
-      setError((err as Error).message);
+      setError(authErrorMessage(err));
     } finally {
       setBusy(false);
     }
