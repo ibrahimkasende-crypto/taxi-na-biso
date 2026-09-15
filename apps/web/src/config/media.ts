@@ -85,5 +85,7 @@ export const photos = {
 
 export const videos = {
   heroMp4: '/images/hero/hero_taxi.mp4',
+  /** Version légère H.264 sans audio — chargée sur mobile (<768px) */
+  heroMp4Mobile: '/images/hero/hero_taxi_mobile.mp4',
   heroPoster: '/images/hero/kinshasa-poster.jpg',
 } as const;

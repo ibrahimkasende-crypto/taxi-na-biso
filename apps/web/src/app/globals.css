@@ -294,6 +294,46 @@ body {
   object-position: center 42%;
 }
 
+@media (max-width: 767px) {
+  .tnb-hero-video {
+    object-position: center 55%;
+  }
+}
+
+.tnb-hero-poster {
+  pointer-events: none;
+}
+
+@keyframes tnb-popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.tnb-popover-in {
+  animation: tnb-popover-in 180ms var(--tnb-ease, ease-out) both;
+}
+
+.tnb-popover-sheet.tnb-popover-in {
+  animation-name: tnb-popover-sheet-in;
+}
+
+@keyframes tnb-popover-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tnb-book-card {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.55);

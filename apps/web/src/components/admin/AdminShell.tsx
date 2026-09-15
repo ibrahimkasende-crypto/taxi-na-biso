@@ -201,7 +201,7 @@ export function AdminShell({
 
   return (
     <div className="min-h-screen bg-[#F4F5F7] text-navy">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 lg:block">{sidebar}</aside>
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button type="button" className="absolute inset-0 bg-navy/50" aria-label="Fermer le menu" onClick={() => setOpen(false)} />
@@ -209,7 +209,7 @@ export function AdminShell({
         </div>
       ) : null}
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-56">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-black/5 bg-white/95 px-4 py-3 backdrop-blur">
           <button type="button" className="rounded-xl border p-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Ouvrir le menu">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

@@ -25,6 +25,9 @@ android/.gradle/
 android/build/
 android/app/build/
 
+# Local tooling (ffmpeg binaries)
+tools/ffmpeg/
+
 # Logs
 *.log
 npm-debug.log*

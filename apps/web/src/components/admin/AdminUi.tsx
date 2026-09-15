@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export function StatusPill({ status }: { status: string }) {
@@ -41,18 +43,46 @@ export function StatusPill({ status }: { status: string }) {
     pending_pay: 'En attente',
   };
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${map[status] ?? 'bg-gray-100 text-gray-700'}`}>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ${map[status] ?? 'bg-gray-100 text-gray-700'}`}>
       {labels[status] ?? status}
     </span>
   );
 }
 
-export function KpiCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
+export function KpiCard({
+  label,
+  value,
+  hint,
+  href,
+  icon: Icon,
+  iconClassName = 'bg-violet-100 text-violet-700',
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  href?: string;
+  icon?: LucideIcon;
+  iconClassName?: string;
+}) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-card">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-navy">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+    <div className="rounded-2xl bg-white p-3.5 shadow-card sm:p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
+          <p className="mt-1.5 text-2xl font-bold text-navy sm:text-3xl">{value}</p>
+          {hint ? <p className="mt-1 text-[11px] text-muted">{hint}</p> : null}
+          {href ? (
+            <Link href={href} className="mt-2 inline-block text-[11px] font-semibold text-navy/70 hover:text-brand">
+              Voir →
+            </Link>
+          ) : null}
+        </div>
+        {Icon ? (
+          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${iconClassName}`}>
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
