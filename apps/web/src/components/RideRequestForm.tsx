@@ -15,7 +15,7 @@ import {
   buildWhatsAppMessage,
   clearDraft,
   combineKinshasaDateTime,
-  formatWeekdayLong,
+  formatPickupSchedule,
   isImmediate,
   isPlausiblePhone,
   isTimePastOnDate,
@@ -32,7 +32,7 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { officialWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useLiveFleet } from '@/lib/use-live-fleet';
 
-type Step = 'dropoff' | 'pickup' | 'when' | 'date' | 'time' | 'vehicle' | 'contact' | 'recap' | 'done';
+type Step = 'dropoff' | 'pickup' | 'when' | 'nowConfirm' | 'date' | 'time' | 'vehicle' | 'contact' | 'recap' | 'done';
 
 const MAIN: Step[] = ['dropoff', 'pickup', 'when', 'vehicle', 'contact'];
 
@@ -244,8 +244,9 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
         pickup: normalized.pickup!,
         dropoff: normalized.dropoff!,
         date: normalized.date,
-        timeLabel: normalized.timeMode === 'now' ? 'Maintenant' : normalized.time,
+        timeLabel: normalized.time,
         categoryId: normalized.categoryId,
+        isNow: normalized.timeMode === 'now',
       });
       setSuccess({ reference, whatsAppUrl: officialWhatsAppUrl(message) });
       go('done');
@@ -259,17 +260,21 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
 
   const mainIndex = Math.max(
     0,
-    MAIN.indexOf(step === 'date' || step === 'time' ? 'when' : step === 'recap' || step === 'done' ? 'contact' : step),
+    MAIN.indexOf(
+      step === 'date' || step === 'time' || step === 'nowConfirm'
+        ? 'when'
+        : step === 'recap' || step === 'done'
+          ? 'contact'
+          : step,
+    ),
   );
 
-  const whenLabel = isImmediate(draft)
-    ? 'Aujourd’hui · Maintenant'
-    : `${formatWeekdayLong(draft.date)} · ${draft.time}`;
+  const pickupLabel = formatPickupSchedule(draft);
 
   const phoneNational = draft.phone.replace(/^\+?243/, '').replace(/\D/g, '');
 
   const cardCls =
-    'tnb-book-card w-full min-h-[20rem] rounded-[1.75rem] p-5 text-ink transition-[min-height] duration-300 sm:p-6';
+    'tnb-book-card w-full rounded-[1.75rem] p-4 text-ink transition-[min-height] duration-300 sm:min-h-[17rem] sm:p-6';
 
   const body = (
     <div key={animKey} className={reduce ? '' : 'tnb-step-in'}>
@@ -280,9 +285,10 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
           onClick={() => {
             if (step === 'pickup') go('dropoff');
             else if (step === 'when') go('pickup');
+            else if (step === 'nowConfirm') go('when');
             else if (step === 'date') go('when');
             else if (step === 'time') go('date');
-            else if (step === 'vehicle') go(draft.timeMode === 'now' ? 'when' : 'time');
+            else if (step === 'vehicle') go(draft.timeMode === 'now' ? 'nowConfirm' : 'time');
             else if (step === 'contact') go('vehicle');
             else if (step === 'recap') go(hasIdentity(draft) ? 'vehicle' : 'contact');
           }}
@@ -314,7 +320,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
               hideLabel
               autoFocus={!compact}
               label="Où souhaitez-vous aller ?"
-              placeholder="Université, quartier, hôtel, aéroport..."
+              placeholder="Rechercher votre destination"
               value={draft.dropoff}
               chips={quickDestinations}
               onChange={(dropoff) => patch({ dropoff })}
@@ -361,14 +367,14 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
 
       {step === 'when' ? (
         <>
-          <h2 className="text-xl font-semibold sm:text-2xl">Quand souhaitez-vous partir ?</h2>
-          <div className="mt-5 grid gap-3">
+          <h2 className="text-xl font-semibold sm:text-2xl">Quand souhaitez-vous être récupéré ?</h2>
+          <div className="mt-4 grid gap-3">
             <button
               type="button"
-              className="min-h-16 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi"
+              className="min-h-14 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi sm:min-h-16"
               onClick={() => {
                 patch({ timeMode: 'now', date: todayISODate(), time: nowHHMM() });
-                window.setTimeout(() => go('vehicle'), reduce ? 0 : 180);
+                window.setTimeout(() => go('nowConfirm'), reduce ? 0 : 180);
               }}
             >
               <span className="block text-lg font-semibold">Maintenant</span>
@@ -376,7 +382,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
             </button>
             <button
               type="button"
-              className="min-h-16 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi"
+              className="min-h-14 rounded-2xl border-2 border-black/8 bg-white px-4 text-left hover:border-taxi sm:min-h-16"
               onClick={() => {
                 patch({ timeMode: 'scheduled' });
                 go('date');
@@ -389,9 +395,22 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
         </>
       ) : null}
 
+      {step === 'nowConfirm' ? (
+        <>
+          <h2 className="text-xl font-semibold sm:text-2xl">Prise en charge</h2>
+          <div className="mt-4 rounded-2xl border border-black/10 bg-white px-4 py-4">
+            <span className="block text-xs text-muted">Prise en charge</span>
+            <span className="block text-lg font-semibold">Dès que possible</span>
+          </div>
+          <button type="button" className="btn-primary mt-5 w-full" onClick={() => go('vehicle')}>
+            Continuer
+          </button>
+        </>
+      ) : null}
+
       {step === 'date' ? (
         <>
-          <h2 className="text-xl font-semibold sm:text-2xl">Quelle date ?</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">Choisissez votre date</h2>
           <div className="mt-4">
             <DatePicker
               value={draft.date}
@@ -406,14 +425,14 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
 
       {step === 'time' ? (
         <>
-          <h2 className="text-xl font-semibold sm:text-2xl">À quelle heure ?</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">À quelle heure souhaitez-vous être récupéré ?</h2>
           <div className="mt-4">
             <TimePicker
               date={draft.date}
               value={draft.time}
               onChange={(time) => {
                 if (isTimePastOnDate(draft.date, time)) {
-                  setError('Cette heure est déjà passée.');
+                  setError('Cette heure est déjà passée. Choisissez une autre heure.');
                   return;
                 }
                 patch({ time, timeMode: 'scheduled' });
@@ -432,7 +451,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
       {step === 'vehicle' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Quel véhicule vous convient ?</h2>
-          <div className="mt-4 flex gap-3 overflow-x-auto pb-2 snap-x">
+          <div className="-mx-1 mt-3 flex gap-2.5 overflow-x-auto px-1 pb-1 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {cats.map((c) => {
               const selected = draft.categoryId === c.id;
               return (
@@ -444,25 +463,24 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
                     patch({ categoryId: c.id });
                     window.setTimeout(() => afterVehicle(next), reduce ? 0 : 220);
                   }}
-                  className={`w-40 shrink-0 snap-start overflow-hidden rounded-2xl border-2 text-left ${
+                  className={`w-[8.75rem] shrink-0 snap-start overflow-hidden rounded-2xl border-2 text-left sm:w-40 ${
                     selected ? 'border-taxi' : 'border-black/8'
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={fleetImageForCategory(c.id)} alt="" className="h-24 w-full object-cover" />
-                  <span className="block px-3 py-2">
+                  <img src={fleetImageForCategory(c.id)} alt="" className="h-20 w-full object-cover sm:h-24" />
+                  <span className="block px-2.5 py-2 sm:px-3">
                     <span className="flex items-center justify-between gap-1">
-                      <span className="font-semibold">{c.label}</span>
+                      <span className="text-sm font-semibold sm:text-base">{c.label}</span>
                       {selected ? <Check className="h-4 w-4 text-navy" aria-hidden /> : null}
                     </span>
-                    <span className="block text-sm text-muted">{c.hourlyUsd} $ / heure</span>
-                    <span className="block text-[11px] text-muted">{c.vehicles[0]}</span>
+                    <span className="block text-xs text-muted sm:text-sm">{c.hourlyUsd} $ / h</span>
+                    <span className="hidden text-[11px] text-muted sm:block">{c.vehicles[0]}</span>
                   </span>
                 </button>
               );
             })}
           </div>
-          <p className="mt-2 text-xs text-muted">Journée : {cat.dailyUsd} $ pour {cat.label}. Détail au récapitulatif.</p>
         </>
       ) : null}
 
@@ -514,8 +532,8 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
           <ul className="mt-4 divide-y divide-black/5 text-sm">
             <RecapRow label="Départ" value={draft.pickup?.label ?? ''} onEdit={() => go('pickup')} />
             <RecapRow label="Destination" value={draft.dropoff?.label ?? ''} onEdit={() => go('dropoff')} />
-            <RecapRow label="Quand" value={whenLabel} onEdit={() => go('when')} />
-            <RecapRow label="Véhicule" value={`${cat.label} · ${cat.hourlyUsd} $/h`} onEdit={() => go('vehicle')} />
+            <RecapRow label="Prise en charge" value={pickupLabel} onEdit={() => go(isImmediate(draft) ? 'nowConfirm' : 'time')} />
+            <RecapRow label="Véhicule" value={cat.label} onEdit={() => go('vehicle')} />
             <RecapRow label="Client" value={draft.name} onEdit={() => go('contact')} />
             <RecapRow label="Téléphone" value={normalizePhone(draft.phone)} onEdit={() => go('contact')} />
           </ul>
@@ -531,7 +549,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
                 Création de votre demande…
               </span>
             ) : (
-              'Confirmer la course'
+              'CONFIRMER LA COURSE'
             )}
           </button>
         </>
@@ -582,7 +600,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
     return (
       <div className="lg:contents">
         <div className="fixed inset-0 z-40 bg-navy/50 lg:hidden" />
-        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:pb-0">
+        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-[1.75rem] pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:rounded-none lg:pb-0">
           {card}
         </div>
       </div>

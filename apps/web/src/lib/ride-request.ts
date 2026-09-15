@@ -111,15 +111,28 @@ export function shiftIsoDate(date: string, days: number): string {
 }
 
 export function suggestTimes(date: string): string[] {
-  if (date !== todayISODate()) return ['08:00', '10:00', '14:00', '16:30', '18:00'];
+  const slots = halfHourSlots(date);
+  if (date !== todayISODate()) return slots.slice(0, 8);
   const now = nowHHMM();
   const [h, min] = now.split(':').map(Number);
   const hour = h ?? 0;
   const minute = min ?? 0;
   const start = Math.ceil((hour * 60 + minute + 20) / 30) * 30;
   const out: string[] = [];
-  for (let t = start; t <= 22 * 60 && out.length < 4; t += 30) {
+  for (let t = start; t <= 22 * 60 && out.length < 6; t += 30) {
     out.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
+  }
+  return out.length > 0 ? out : slots.slice(0, 4);
+}
+
+/** Créneaux 30 min (05:00–22:30) pour une date donnée. */
+export function halfHourSlots(date: string): string[] {
+  const out: string[] = [];
+  for (let h = 5; h <= 22; h += 1) {
+    for (const m of ['00', '30'] as const) {
+      const t = `${String(h).padStart(2, '0')}:${m}`;
+      if (!isTimePastOnDate(date, t)) out.push(t);
+    }
   }
   return out;
 }
@@ -155,7 +168,7 @@ export function validateRideDraft(draft: RideDraft): string | null {
     const when = combineKinshasaDateTime(draft.date, draft.time);
     if (Number.isNaN(when.getTime())) return 'L’heure n’est pas valide.';
     if (when.getTime() < Date.now() - 60_000) {
-      return 'Cette heure est déjà passée.';
+      return 'Cette heure est déjà passée. Choisissez une autre heure.';
     }
   }
   if (!draft.categoryId) return 'Choisissez une catégorie de véhicule.';
@@ -171,25 +184,36 @@ export function buildWhatsAppMessage(input: {
   date: string;
   timeLabel: string;
   categoryId: FleetCategoryId;
+  isNow?: boolean;
 }): string {
   const cat = fleetCategoryById(input.categoryId);
-  return [
+  const lines = [
     'Bonjour TAXI NA BISO 👋',
     '',
-    'Je souhaite commander une course.',
+    'Je souhaite réserver une course.',
     '',
     `Référence : ${input.reference}`,
     `Nom : ${input.name}`,
     `Téléphone : ${input.phone}`,
-    `Départ : ${input.pickup.label}${input.pickup.address ? `, ${input.pickup.address}` : ''}`,
-    `Destination : ${input.dropoff.label}${input.dropoff.address ? `, ${input.dropoff.address}` : ''}`,
-    `Date : ${formatShortDate(input.date)}`,
-    `Heure : ${input.timeLabel}`,
-    `Catégorie : ${cat.label}`,
-    `Tarif de référence : ${cat.hourlyUsd} $/heure — ${cat.dailyUsd} $/journée`,
     '',
-    'Merci de confirmer ma réservation.',
-  ].join('\n');
+    `Départ : ${input.pickup.label}`,
+    `Destination : ${input.dropoff.label}`,
+    '',
+  ];
+  if (input.isNow) {
+    lines.push('Date de prise en charge : Aujourd’hui');
+    lines.push('Heure de prise en charge : Dès que possible');
+  } else {
+    lines.push(`Date de prise en charge : ${formatShortDate(input.date)}`);
+    lines.push(`Heure de prise en charge : ${input.timeLabel}`);
+  }
+  lines.push('', `Véhicule : ${cat.label}`, '', 'Merci de confirmer ma demande.');
+  return lines.join('\n');
+}
+
+export function formatPickupSchedule(draft: Pick<RideDraft, 'date' | 'timeMode' | 'time'>): string {
+  if (draft.timeMode === 'now') return 'Dès que possible';
+  return `${formatLongDate(draft.date)} · ${draft.time}`;
 }
 
 export function readDraft(): Partial<RideDraft> | null {

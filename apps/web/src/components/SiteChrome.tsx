@@ -139,66 +139,110 @@ export function SiteHeader() {
   );
 }
 
+function FooterSocialRow() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <SocialCircle label="Facebook" href={socialLinks.facebook.href}>
+        <FacebookMark />
+      </SocialCircle>
+      <SocialCircle label="Instagram" href={socialLinks.instagram.href}>
+        <InstagramMark />
+      </SocialCircle>
+      <a
+        href={footerWhatsAppUrl()}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="WhatsApp"
+        className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:scale-105 hover:bg-[#25D366]"
+      >
+        <WhatsAppIcon className="h-5 w-5" />
+      </a>
+      <SocialCircle label="TikTok" href={socialLinks.tiktok.href}>
+        <TikTokMark />
+      </SocialCircle>
+    </div>
+  );
+}
+
+function FooterContactList() {
+  return (
+    <ul className="space-y-2 text-sm text-white/70">
+      <li>{brand.defaultCity}, RDC</li>
+      <li>
+        <a href={footerWhatsAppUrl()} target="_blank" rel="noreferrer" className="hover:text-white">
+          WhatsApp : +243 974 543 860
+        </a>
+      </li>
+      <li>
+        <a href={`mailto:${brand.supportEmail}`} className="hover:text-white">
+          {brand.supportEmail}
+        </a>
+      </li>
+    </ul>
+  );
+}
+
+function FooterNavList() {
+  return (
+    <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-white/70 sm:grid-cols-1 sm:space-y-2">
+      <li><Link href="/" className="hover:text-white">Accueil</Link></li>
+      <li><Link href="/#services" className="hover:text-white">Services</Link></li>
+      <li><Link href="/#flotte" className="hover:text-white">Notre flotte</Link></li>
+      <li><Link href="/#tarifs" className="hover:text-white">Tarifs</Link></li>
+      <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
+      <li><Link href="/#reservation" className="hover:text-white">Réserver</Link></li>
+    </ul>
+  );
+}
+
 export function SiteFooter() {
   return (
     <footer className="relative mt-0 bg-navy text-white">
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-16 h-16 bg-gradient-to-b from-transparent to-navy" />
-      <div className="tnb-shell relative grid gap-10 py-16 lg:grid-cols-4">
-        <div>
-          <Link href="/" className="inline-block">
-            <BrandLogo inverted className="h-12 w-auto max-w-[280px] object-contain object-left sm:h-14" />
-          </Link>
-          <p className="mt-4 text-sm font-medium text-taxi">Transport fiable · Service rapide · Disponible 24/7</p>
-          <p className="mt-3 max-w-xs text-sm text-white/65">
-            {brand.tagline} — déplacements à {brand.defaultCity}.
-          </p>
+      <div className="tnb-shell relative py-12 lg:py-16">
+        <div className="flex flex-col gap-8 lg:hidden">
+          <div>
+            <Link href="/" className="inline-block">
+              <BrandLogo inverted className="h-11 w-auto max-w-[260px] object-contain object-left" />
+            </Link>
+            <p className="mt-3 text-sm font-medium text-taxi">Transport fiable · Service rapide · Disponible 24/7</p>
+            <p className="mt-2 max-w-sm text-sm text-white/65">
+              {brand.tagline} — déplacements à {brand.defaultCity}.
+            </p>
+            <div className="mt-4">
+              <FooterSocialRow />
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-semibold">Contact</p>
+            <FooterContactList />
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-semibold">Navigation</p>
+            <FooterNavList />
+          </div>
         </div>
-        <FooterBlock title="Navigation">
-          <ul className="space-y-2 text-sm text-white/70">
-            <li><Link href="/" className="hover:text-white">Accueil</Link></li>
-            <li><Link href="/#services" className="hover:text-white">Services</Link></li>
-            <li><Link href="/#flotte" className="hover:text-white">Notre flotte</Link></li>
-            <li><Link href="/#tarifs" className="hover:text-white">Tarifs</Link></li>
-            <li><Link href="/a-propos" className="hover:text-white">À propos</Link></li>
-            <li><Link href="/#reservation" className="hover:text-white">Réserver</Link></li>
-          </ul>
-        </FooterBlock>
-        <FooterBlock title="Contact">
-          <ul className="space-y-2 text-sm text-white/70">
-            <li>{brand.defaultCity}, RDC</li>
-            <li>
-              <a href={footerWhatsAppUrl()} target="_blank" rel="noreferrer" className="hover:text-white">
-                WhatsApp : +243 974 543 860
-              </a>
-            </li>
-            <li>
-              <a href={`mailto:${brand.supportEmail}`} className="hover:text-white">
-                {brand.supportEmail}
-              </a>
-            </li>
-          </ul>
-        </FooterBlock>
-        <div>
-          <p className="mb-3 text-sm font-semibold">Suivez-nous</p>
-          <div className="flex flex-wrap gap-2">
-            <SocialCircle label="Facebook" href={socialLinks.facebook.href}>
-              <FacebookMark />
-            </SocialCircle>
-            <SocialCircle label="Instagram" href={socialLinks.instagram.href}>
-              <InstagramMark />
-            </SocialCircle>
-            <a
-              href={footerWhatsAppUrl()}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="WhatsApp"
-              className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:scale-105 hover:bg-[#25D366]"
-            >
-              <WhatsAppIcon className="h-5 w-5" />
-            </a>
-            <SocialCircle label="TikTok" href={socialLinks.tiktok.href}>
-              <TikTokMark />
-            </SocialCircle>
+        <div className="hidden gap-10 lg:grid lg:grid-cols-4">
+          <div>
+            <Link href="/" className="inline-block">
+              <BrandLogo inverted className="h-12 w-auto max-w-[280px] object-contain object-left sm:h-14" />
+            </Link>
+            <p className="mt-4 text-sm font-medium text-taxi">Transport fiable · Service rapide · Disponible 24/7</p>
+            <p className="mt-3 max-w-xs text-sm text-white/65">
+              {brand.tagline} — déplacements à {brand.defaultCity}.
+            </p>
+          </div>
+          <div>
+            <p className="mb-3 text-sm font-semibold">Navigation</p>
+            <FooterNavList />
+          </div>
+          <div>
+            <p className="mb-3 text-sm font-semibold">Contact</p>
+            <FooterContactList />
+          </div>
+          <div>
+            <p className="mb-3 text-sm font-semibold">Suivez-nous</p>
+            <FooterSocialRow />
           </div>
         </div>
       </div>

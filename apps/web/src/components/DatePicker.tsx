@@ -1,12 +1,13 @@
 'use client';
 
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FloatingPopover } from '@/components/ui/FloatingPopover';
 import { formatMonthYear, formatWeekdayLong, shiftIsoDate, todayISODate } from '@/lib/ride-request';
 
 const WEEK = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] as const;
+const MOBILE_MQ = '(max-width: 639px)';
 
 function parseIso(iso: string): { y: number; m: number; d: number } {
   const [y, m, d] = iso.split('-').map(Number);
@@ -35,9 +36,23 @@ export function DatePicker({
   min?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [pending, setPending] = useState(value || min);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const selected = parseIso(value || min);
   const [cursor, setCursor] = useState({ y: selected.y, m: selected.m });
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MQ);
+    const apply = () => setMobile(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  useEffect(() => {
+    if (open) setPending(value || min);
+  }, [open, value, min]);
 
   const cells = useMemo(() => {
     const dim = daysInMonth(cursor.y, cursor.m);
@@ -52,17 +67,24 @@ export function DatePicker({
 
   const today = todayISODate();
   const tomorrow = shiftIsoDate(today, 1);
-  const sat = (() => {
-    const { y, m, d } = parseIso(today);
-    const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-    return shiftIsoDate(today, (6 - dow + 7) % 7);
-  })();
 
   function pick(iso: string) {
     if (iso < min) return;
+    if (mobile) {
+      setPending(iso);
+      return;
+    }
     onChange(iso);
     setOpen(false);
   }
+
+  function confirmMobile() {
+    if (pending < min) return;
+    onChange(pending);
+    setOpen(false);
+  }
+
+  const activeIso = mobile ? pending : value;
 
   const calendar = (
     <div className="w-full">
@@ -84,7 +106,7 @@ export function DatePicker({
         {cells.map((cell, i) => {
           if (!cell) return <span key={`e-${i}`} />;
           const disabled = cell.iso < min;
-          const isSel = cell.iso === value;
+          const isSel = cell.iso === activeIso;
           const isToday = cell.iso === today;
           return (
             <button
@@ -102,12 +124,14 @@ export function DatePicker({
         })}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="rounded-full bg-black/5 px-3 py-1.5 text-sm" onClick={() => pick(today)}>Aujourd’hui</button>
-        <button type="button" className="rounded-full bg-black/5 px-3 py-1.5 text-sm" onClick={() => pick(tomorrow)}>Demain</button>
-        {sat >= today ? (
-          <button type="button" className="rounded-full bg-black/5 px-3 py-1.5 text-sm" onClick={() => pick(sat)}>Samedi</button>
-        ) : null}
+        <button type="button" className="min-h-10 rounded-full bg-black/5 px-3 py-1.5 text-sm" onClick={() => pick(today)}>Aujourd’hui</button>
+        <button type="button" className="min-h-10 rounded-full bg-black/5 px-3 py-1.5 text-sm" onClick={() => pick(tomorrow)}>Demain</button>
       </div>
+      {mobile ? (
+        <button type="button" className="btn-primary mt-4 w-full" onClick={confirmMobile}>
+          Confirmer
+        </button>
+      ) : null}
     </div>
   );
 
@@ -121,23 +145,23 @@ export function DatePicker({
           setCursor({ y: cur.y, m: cur.m });
           setOpen(true);
         }}
-        className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 text-left shadow-sm"
+        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 text-left shadow-sm sm:min-h-14"
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        <CalendarDays className="h-5 w-5 text-brand" aria-hidden />
-        <span>
-          <span className="block text-xs text-muted">{value === today ? 'Aujourd’hui' : 'Date'}</span>
-          <span className="block text-base font-semibold capitalize text-ink">{formatWeekdayLong(value || min)}</span>
+        <CalendarDays className="h-5 w-5 shrink-0 text-brand" aria-hidden />
+        <span className="min-w-0">
+          <span className="block text-xs text-muted">Date de prise en charge</span>
+          <span className="block truncate text-base font-semibold capitalize text-ink">{formatWeekdayLong(value || min)}</span>
         </span>
       </button>
       <FloatingPopover
         open={open}
         onClose={() => setOpen(false)}
         anchorRef={anchorRef}
-        title="Choisissez une date"
+        title={mobile ? 'Choisissez la date de prise en charge' : 'Choisissez votre date'}
         width={340}
-        ariaLabel="Choisissez une date"
+        ariaLabel="Date de prise en charge"
       >
         {calendar}
       </FloatingPopover>

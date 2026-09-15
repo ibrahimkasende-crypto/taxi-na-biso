@@ -53,7 +53,11 @@ describe('WhatsApp et validation', () => {
       categoryId: 'confort',
     });
     expect(msg).toContain('Référence : TNB-20260915-TEST');
-    expect(msg).toContain('Catégorie : Confort');
+    expect(msg).toContain('Je souhaite réserver une course.');
+    expect(msg).toContain('Date de prise en charge :');
+    expect(msg).toContain('Heure de prise en charge : 20:30');
+    expect(msg).toContain('Véhicule : Confort');
+    expect(msg).toContain('Merci de confirmer ma demande.');
     expect(
       validateRideDraft({
         name: 'Client Test',
