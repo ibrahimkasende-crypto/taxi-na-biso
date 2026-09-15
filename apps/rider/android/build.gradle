@@ -1,0 +1,49 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+}
+
+// Chemins Windows courts : CMake/Ninja cassent au-delà de ~250 caractères sous pnpm.
+def tnbNativeBuildRoot = new File("D:/tnb-native-build")
+def tnbCxxRoot = new File("D:/tnb-cxx")
+subprojects { proj ->
+  proj.buildDir = new File(tnbNativeBuildRoot, proj.path.replace(":", "_"))
+  proj.afterEvaluate {
+    def androidExt = proj.extensions.findByName("android")
+    if (androidExt == null) return
+    try {
+      def cmakeExt = androidExt.externalNativeBuild.cmake
+      if (cmakeExt.path != null) {
+        cmakeExt.buildStagingDirectory = new File(tnbCxxRoot, proj.path.replace(":", "_"))
+      }
+    } catch (Exception ignored) {
+      // modules without CMake path
+    }
+    try {
+      // 250+ casse Ninja sous Windows. Une valeur basse force CMake à hasher les .o.
+      androidExt.defaultConfig.externalNativeBuild.cmake.arguments.add("-DCMAKE_OBJECT_PATH_MAX=200")
+    } catch (Exception ignored) {
+      // modules without CMake
+    }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

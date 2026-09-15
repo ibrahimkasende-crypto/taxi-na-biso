@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f8fa;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d0d7de;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--fg); }
+body { font-family: ui-sans-serif, system-ui, sans-serif; }
+
+@keyframes tnb-halo {
+  0%, 100% { opacity: 0.32; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.05); }
+}
+
+@keyframes tnb-marker-soft {
+  0%, 100% { opacity: 0.22; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+.tnb-halo { animation: tnb-halo 14s ease-in-out infinite; }
+.tnb-halo-slow { animation: tnb-halo 20s ease-in-out infinite; }
+.tnb-marker-soft { animation: tnb-marker-soft 4.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tnb-halo,
+  .tnb-halo-slow,
+  .tnb-marker-soft {
+    animation: none !important;
+  }
+}

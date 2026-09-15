@@ -1,0 +1,54 @@
+pluginManagement {
+  def reactNativeGradlePlugin = new File(
+    providers.exec {
+      workingDir(rootDir)
+      commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+    }.standardOutput.asText.get().trim()
+  ).getParentFile().absolutePath
+  includeBuild(reactNativeGradlePlugin)
+  
+  def expoPluginsPath = new File(
+    providers.exec {
+      workingDir(rootDir)
+      commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
+    }.standardOutput.asText.get().trim(),
+    "../android/expo-gradle-plugin"
+  ).absolutePath
+  includeBuild(expoPluginsPath)
+}
+
+plugins {
+  id("com.facebook.react.settings")
+  id("expo-autolinking-settings")
+}
+
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
+    ex.autolinkLibrariesFromCommand()
+  } else {
+    ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
+  }
+}
+expoAutolinking.useExpoModules()
+
+rootProject.name = 'Taxi Na Biso'
+
+expoAutolinking.useExpoVersionCatalog()
+
+include ':app'
+includeBuild(expoAutolinking.reactNativeGradlePlugin)
+
+// Windows Ninja MAX_PATH (260). Keep CMake sources on short junctions.
+def tnbShortNative = [
+  "expo-modules-core": "D:/n/emc/node_modules/expo-modules-core/android",
+  "react-native-screens": "D:/n/rns/node_modules/react-native-screens/android",
+  "react-native-safe-area-context": "D:/n/sac/node_modules/react-native-safe-area-context/android",
+]
+tnbShortNative.each { name, dir ->
+  def p = findProject(":${name}")
+  def f = new File(dir)
+  if (p != null && f.exists()) {
+    p.projectDir = f
+    println "TNB short native :${name} -> ${f.absolutePath}"
+  }
+}

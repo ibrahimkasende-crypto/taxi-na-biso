@@ -1,0 +1,319 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fafaf8;
+  --fg: #111827;
+  --brand: #f04a18;
+  --tnb-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tnb-duration: 700ms;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: #f04a18;
+  color: #fff;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand px-5 font-semibold text-white transition hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 font-semibold text-white backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-5 font-semibold text-ink transition hover:border-brand/40 hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+  }
+  .tnb-shell {
+    @apply mx-auto w-full max-w-[88rem] px-4 sm:px-6 lg:px-10;
+  }
+  .tnb-lift {
+    @apply transition duration-500 ease-out hover:-translate-y-1.5 hover:shadow-card;
+  }
+}
+
+/* ——— Univers continu ——— */
+.tnb-universe {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background:
+    radial-gradient(1200px 480px at 80% 8%, rgb(240 74 24 / 0.07), transparent 55%),
+    radial-gradient(900px 520px at 8% 38%, rgb(17 24 39 / 0.045), transparent 50%),
+    #fafaf8;
+}
+
+.tnb-orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  opacity: 0.28;
+  transform: translateZ(0);
+}
+
+.tnb-orb-a {
+  top: 72vh;
+  left: -8rem;
+  height: 22rem;
+  width: 22rem;
+  background: #f04a18;
+}
+
+.tnb-orb-b {
+  top: 168vh;
+  right: -10rem;
+  height: 26rem;
+  width: 26rem;
+  background: #111827;
+}
+
+.tnb-orb-c {
+  top: 280vh;
+  left: 20%;
+  height: 20rem;
+  width: 20rem;
+  background: #f04a18;
+}
+
+.tnb-band {
+  position: relative;
+}
+
+.tnb-bridge {
+  pointer-events: none;
+  height: 5.5rem;
+  margin-top: -5.5rem;
+}
+
+.tnb-bridge-ink-canvas {
+  background: linear-gradient(to bottom, rgb(17 24 39 / 0), #fafaf8);
+}
+
+.tnb-bridge-to-ink {
+  background: linear-gradient(to bottom, rgb(250 250 248 / 0), #111827);
+}
+
+.tnb-bridge-to-brand {
+  background: linear-gradient(to bottom, rgb(250 250 248 / 0), #f04a18);
+}
+
+.tnb-bridge-brand-canvas {
+  background: linear-gradient(to bottom, rgb(240 74 24 / 0), #fafaf8);
+}
+
+/* ——— Apparitions ——— */
+.tnb-reveal {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    opacity var(--tnb-duration) var(--tnb-ease),
+    transform var(--tnb-duration) var(--tnb-ease);
+}
+
+.tnb-reveal-scale {
+  transform: translate3d(0, 14px, 0) scale(0.985);
+}
+
+.tnb-reveal.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@keyframes tnb-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes tnb-logo-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes tnb-media-in {
+  from {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tnb-pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.55;
+  }
+}
+
+.animate-fade-up {
+  animation: tnb-fade-up 0.7s var(--tnb-ease) both;
+}
+
+.animate-logo-in {
+  animation: tnb-logo-in 0.9s var(--tnb-ease) both;
+}
+
+.animate-media-in {
+  animation: tnb-media-in 1.1s var(--tnb-ease) both;
+}
+
+.marker-pulse {
+  animation: tnb-pulse-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes tnb-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(12px);
+  }
+}
+
+@keyframes tnb-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes tnb-halo {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes tnb-marker-soft {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes tnb-route-glow {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.tnb-drift {
+  animation: tnb-drift 18s ease-in-out infinite;
+}
+
+.tnb-float {
+  animation: tnb-float 12s ease-in-out infinite;
+}
+
+.tnb-float-slow {
+  animation: tnb-float 16s ease-in-out infinite;
+}
+
+.tnb-halo {
+  animation: tnb-halo 14s ease-in-out infinite;
+}
+
+.tnb-halo-slow {
+  animation: tnb-halo 20s ease-in-out infinite;
+}
+
+.tnb-marker-soft {
+  animation: tnb-marker-soft 4.8s ease-in-out infinite;
+}
+
+.tnb-route {
+  animation: tnb-route-glow 10s ease-in-out infinite;
+}
+
+.tnb-hero-video {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-logo-in,
+  .animate-media-in,
+  .marker-pulse,
+  .tnb-drift,
+  .tnb-float,
+  .tnb-float-slow,
+  .tnb-halo,
+  .tnb-halo-slow,
+  .tnb-marker-soft,
+  .tnb-route {
+    animation: none !important;
+  }
+
+  .tnb-reveal,
+  .tnb-reveal-scale {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .tnb-lift {
+    transition: none;
+  }
+
+  .tnb-lift:hover {
+    transform: none;
+  }
+}

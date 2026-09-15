@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Taxi Na Biso",
+    "slug": "taxi-na-biso-rider",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/passenger-icon.png",
+    "scheme": "taxinabiso",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-passenger.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF8"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "cd.taxinabiso.rider",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Taxi Na Biso utilise votre position pour déterminer votre lieu de départ, rechercher un chauffeur proche et suivre votre course.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/passenger-icon.png",
+        "backgroundColor": "#F04A18",
+        "monochromeImage": "./assets/favicon.png"
+      },
+      "package": "cd.taxinabiso.rider",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "Taxi Na Biso",
+      "shortName": "Taxi Na Biso",
+      "themeColor": "#F04A18",
+      "backgroundColor": "#FAFAF8"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Taxi Na Biso utilise votre position pour déterminer votre lieu de départ, rechercher un chauffeur proche et suivre votre course.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "demoAuthEnabled": true,
+      "embeddedDebugDemo": true
+    }
+  }
+}
