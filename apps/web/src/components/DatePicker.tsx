@@ -145,14 +145,14 @@ export function DatePicker({
           setCursor({ y: cur.y, m: cur.m });
           setOpen(true);
         }}
-        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 text-left shadow-sm sm:min-h-14"
+        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border-2 border-black/10 bg-white px-4 text-left shadow-sm sm:min-h-14"
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         <CalendarDays className="h-5 w-5 shrink-0 text-brand" aria-hidden />
         <span className="min-w-0">
-          <span className="block text-xs text-muted">Date de prise en charge</span>
-          <span className="block truncate text-base font-semibold capitalize text-ink">{formatWeekdayLong(value || min)}</span>
+          <span className="block text-xs font-medium text-muted">Date de prise en charge</span>
+          <span className="block truncate text-lg font-bold capitalize text-ink sm:text-xl">{formatWeekdayLong(value || min)}</span>
         </span>
       </button>
       <FloatingPopover

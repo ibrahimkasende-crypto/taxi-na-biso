@@ -212,8 +212,24 @@ export function buildWhatsAppMessage(input: {
 }
 
 export function formatPickupSchedule(draft: Pick<RideDraft, 'date' | 'timeMode' | 'time'>): string {
-  if (draft.timeMode === 'now') return 'Dès que possible';
-  return `${formatLongDate(draft.date)} · ${draft.time}`;
+  const parts = formatPickupRecapParts(draft);
+  if (parts.isNow) return 'Dès que possible';
+  return `${parts.dateLabel} · ${parts.timeLabel}`;
+}
+
+export function formatPickupRecapParts(draft: Pick<RideDraft, 'date' | 'timeMode' | 'time'>): {
+  dateLabel: string;
+  timeLabel: string;
+  isNow: boolean;
+} {
+  if (draft.timeMode === 'now') {
+    return { dateLabel: 'Aujourd’hui', timeLabel: 'Dès que possible', isNow: true };
+  }
+  return {
+    dateLabel: formatLongDate(draft.date),
+    timeLabel: draft.time || '—',
+    isNow: false,
+  };
 }
 
 export function readDraft(): Partial<RideDraft> | null {

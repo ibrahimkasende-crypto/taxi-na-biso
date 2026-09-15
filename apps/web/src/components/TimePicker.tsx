@@ -13,10 +13,13 @@ export function TimePicker({
   date,
   value,
   onChange,
+  inline = false,
 }: {
   date: string;
   value: string;
   onChange: (hhmm: string) => void;
+  /** Affiche les créneaux directement sous le champ (sans ouvrir le popover). */
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -101,8 +104,21 @@ export function TimePicker({
     </div>
   );
 
+  const slots = (quickSlots.length > 0 ? quickSlots : allSlots.slice(0, 8)).map((t) => (
+    <button
+      key={t}
+      type="button"
+      onClick={() => pick(t)}
+      className={`min-h-11 min-w-[4.5rem] rounded-xl border px-3 text-sm font-semibold tabular-nums ${
+        value === t ? 'border-taxi bg-taxi text-navy shadow-sm' : 'border-black/10 bg-white hover:border-taxi/50'
+      }`}
+    >
+      {t}
+    </button>
+  ));
+
   return (
-    <>
+    <div className="space-y-3">
       <button
         ref={anchorRef}
         type="button"
@@ -110,16 +126,32 @@ export function TimePicker({
           setAdvanced(false);
           setOpen(true);
         }}
-        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 text-left sm:min-h-14"
+        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border-2 border-black/10 bg-white px-4 text-left shadow-sm sm:min-h-14"
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         <Clock className="h-5 w-5 shrink-0 text-brand" aria-hidden />
         <span className="min-w-0">
-          <span className="block text-xs text-muted">Heure de prise en charge</span>
-          <span className="block font-semibold">{value || '—'}</span>
+          <span className="block text-xs font-medium text-muted">Heure de prise en charge</span>
+          <span className="block text-xl font-bold tabular-nums">{value || '—'}</span>
         </span>
       </button>
+      {inline ? (
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted">Créneaux disponibles</p>
+          <div className="flex flex-wrap gap-2">{slots}</div>
+          <button
+            type="button"
+            className="mt-3 min-h-11 w-full rounded-xl border border-dashed border-brand/30 text-sm font-medium text-brand"
+            onClick={() => {
+              setAdvanced(false);
+              setOpen(true);
+            }}
+          >
+            Choisir une autre heure
+          </button>
+        </div>
+      ) : null}
       <FloatingPopover
         open={open}
         onClose={() => {
@@ -133,6 +165,6 @@ export function TimePicker({
       >
         {quickPanel}
       </FloatingPopover>
-    </>
+    </div>
   );
 }

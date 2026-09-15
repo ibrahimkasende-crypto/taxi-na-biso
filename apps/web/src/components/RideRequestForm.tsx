@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Car, Check, Clock, Loader2, MapPin, Phone, User } from 'lucide-react';
 
 import { DatePicker } from '@/components/DatePicker';
 import { PlaceSearch } from '@/components/PlaceSearch';
@@ -15,7 +15,9 @@ import {
   buildWhatsAppMessage,
   clearDraft,
   combineKinshasaDateTime,
-  formatPickupSchedule,
+  formatLongDate,
+  formatPickupRecapParts,
+  formatWeekdayLong,
   isImmediate,
   isPlausiblePhone,
   isTimePastOnDate,
@@ -269,7 +271,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
     ),
   );
 
-  const pickupLabel = formatPickupSchedule(draft);
+  const schedule = formatPickupRecapParts(draft);
 
   const phoneNational = draft.phone.replace(/^\+?243/, '').replace(/\D/g, '');
 
@@ -398,9 +400,10 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
       {step === 'nowConfirm' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Prise en charge</h2>
-          <div className="mt-4 rounded-2xl border border-black/10 bg-white px-4 py-4">
-            <span className="block text-xs text-muted">Prise en charge</span>
-            <span className="block text-lg font-semibold">Dès que possible</span>
+          <p className="mt-1 text-sm text-muted">Votre chauffeur viendra vous chercher dès qu’il est disponible.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <ScheduleTile icon={CalendarDays} label="Date" value="Aujourd’hui" accent />
+            <ScheduleTile icon={Clock} label="Heure" value="Dès que possible" accent />
           </div>
           <button type="button" className="btn-primary mt-5 w-full" onClick={() => go('vehicle')}>
             Continuer
@@ -411,6 +414,11 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
       {step === 'date' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Choisissez votre date</h2>
+          <p className="mt-1 text-sm text-muted">Quand le chauffeur doit-il venir vous récupérer ?</p>
+          <div className="mt-4 rounded-2xl border-2 border-taxi/30 bg-taxi/10 px-4 py-4 text-center">
+            <span className="block text-xs font-medium uppercase tracking-wide text-navy/60">Date sélectionnée</span>
+            <p className="mt-1 text-xl font-bold capitalize text-navy sm:text-2xl">{formatWeekdayLong(draft.date)}</p>
+          </div>
           <div className="mt-4">
             <DatePicker
               value={draft.date}
@@ -420,14 +428,21 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
               }}
             />
           </div>
+          <p className="mt-2 text-center text-xs text-muted">Touchez le champ pour ouvrir le calendrier</p>
         </>
       ) : null}
 
       {step === 'time' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">À quelle heure souhaitez-vous être récupéré ?</h2>
+          <p className="mt-1 text-sm text-muted">Pour le {formatLongDate(draft.date)}</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <ScheduleTile icon={CalendarDays} label="Date" value={formatLongDate(draft.date)} />
+            <ScheduleTile icon={Clock} label="Heure" value={draft.time || '—'} accent highlight />
+          </div>
           <div className="mt-4">
             <TimePicker
+              inline
               date={draft.date}
               value={draft.time}
               onChange={(time) => {
@@ -436,7 +451,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
                   return;
                 }
                 patch({ time, timeMode: 'scheduled' });
-                window.setTimeout(() => go('vehicle'), reduce ? 0 : 200);
+                setError(null);
               }}
             />
           </div>
@@ -445,12 +460,21 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
               {error}
             </p>
           ) : null}
+          <button
+            type="button"
+            className="btn-primary mt-5 w-full"
+            disabled={!draft.time || isTimePastOnDate(draft.date, draft.time)}
+            onClick={() => go('vehicle')}
+          >
+            Continuer
+          </button>
         </>
       ) : null}
 
       {step === 'vehicle' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Quel véhicule vous convient ?</h2>
+          <ScheduleBanner schedule={schedule} className="mt-3" />
           <div className="-mx-1 mt-3 flex gap-2.5 overflow-x-auto px-1 pb-1 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {cats.map((c) => {
               const selected = draft.categoryId === c.id;
@@ -458,13 +482,9 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => {
-                    const next = { ...draft, categoryId: c.id };
-                    patch({ categoryId: c.id });
-                    window.setTimeout(() => afterVehicle(next), reduce ? 0 : 220);
-                  }}
+                  onClick={() => patch({ categoryId: c.id })}
                   className={`w-[8.75rem] shrink-0 snap-start overflow-hidden rounded-2xl border-2 text-left sm:w-40 ${
-                    selected ? 'border-taxi' : 'border-black/8'
+                    selected ? 'border-taxi ring-2 ring-taxi/30' : 'border-black/8'
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -481,6 +501,9 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
               );
             })}
           </div>
+          <button type="button" className="btn-primary mt-5 w-full" onClick={() => afterVehicle()}>
+            Continuer
+          </button>
         </>
       ) : null}
 
@@ -488,6 +511,7 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Presque terminé 👋</h2>
           <p className="mt-1 text-sm text-muted">Comment pouvons-nous vous contacter ?</p>
+          <ScheduleBanner schedule={schedule} className="mt-3" />
           <label className="mt-4 block text-sm font-medium">
             Nom
             <input
@@ -529,20 +553,60 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
       {step === 'recap' ? (
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">Votre course</h2>
-          <ul className="mt-4 divide-y divide-black/5 text-sm">
-            <RecapRow label="Départ" value={draft.pickup?.label ?? ''} onEdit={() => go('pickup')} />
-            <RecapRow label="Destination" value={draft.dropoff?.label ?? ''} onEdit={() => go('dropoff')} />
-            <RecapRow label="Prise en charge" value={pickupLabel} onEdit={() => go(isImmediate(draft) ? 'nowConfirm' : 'time')} />
-            <RecapRow label="Véhicule" value={cat.label} onEdit={() => go('vehicle')} />
-            <RecapRow label="Client" value={draft.name} onEdit={() => go('contact')} />
-            <RecapRow label="Téléphone" value={normalizePhone(draft.phone)} onEdit={() => go('contact')} />
-          </ul>
+          <p className="mt-1 text-sm text-muted">Vérifiez les informations avant confirmation.</p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-2xl border border-black/8 bg-white p-4 shadow-sm">
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center pt-1">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-taxi/25 text-brand">
+                    <MapPin className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="my-1 w-0.5 flex-1 min-h-[1.5rem] bg-black/10" aria-hidden />
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-navy/10 text-navy">
+                    <MapPin className="h-4 w-4" aria-hidden />
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 space-y-4">
+                  <RecapField label="Départ" value={draft.pickup?.label ?? ''} onEdit={() => go('pickup')} />
+                  <RecapField label="Destination" value={draft.dropoff?.label ?? ''} onEdit={() => go('dropoff')} />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border-2 border-taxi/35 bg-gradient-to-br from-taxi/15 to-taxi/5 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-navy/70">Prise en charge</p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-brand underline-offset-2 hover:underline"
+                  onClick={() => go(isImmediate(draft) ? 'nowConfirm' : 'time')}
+                >
+                  Modifier
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <ScheduleTile icon={CalendarDays} label="Date" value={schedule.dateLabel} accent />
+                <ScheduleTile icon={Clock} label="Heure" value={schedule.timeLabel} accent highlight />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-black/8 bg-white p-4 shadow-sm">
+              <RecapField label="Véhicule" value={`${cat.label} · ${cat.hourlyUsd} $/h`} onEdit={() => go('vehicle')} icon={Car} />
+            </div>
+
+            <div className="rounded-2xl border border-black/8 bg-white p-4 shadow-sm">
+              <RecapField label="Client" value={draft.name} onEdit={() => go('contact')} icon={User} />
+              <div className="mt-3 border-t border-black/5 pt-3">
+                <RecapField label="Téléphone" value={normalizePhone(draft.phone)} onEdit={() => go('contact')} icon={Phone} />
+              </div>
+            </div>
+          </div>
           {error ? (
             <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-danger" role="alert">
               {error}
             </p>
           ) : null}
-          <button type="button" disabled={busy} className="btn-primary mt-5 w-full" onClick={() => void confirm()}>
+          <button type="button" disabled={busy} className="btn-primary mt-5 w-full text-base tracking-wide" onClick={() => void confirm()}>
             {busy ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -610,17 +674,76 @@ export function RideRequestForm({ compact = false }: { compact?: boolean }) {
   return card;
 }
 
-function RecapRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+function ScheduleTile({
+  icon: Icon,
+  label,
+  value,
+  accent = false,
+  highlight = false,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+  value: string;
+  accent?: boolean;
+  highlight?: boolean;
+}) {
   return (
-    <li className="flex items-start justify-between gap-3 py-3">
-      <span>
-        <span className="block text-xs text-muted">{label}</span>
-        <span className="font-medium">{value}</span>
+    <div
+      className={`rounded-xl px-3 py-3 ${accent ? 'border border-taxi/25 bg-white shadow-sm' : 'border border-black/8 bg-[#faf8f5]'}`}
+    >
+      <Icon className="mb-1.5 h-5 w-5 text-brand" aria-hidden />
+      <span className="block text-[11px] font-medium uppercase tracking-wide text-muted">{label}</span>
+      <span className={`mt-0.5 block leading-snug ${highlight ? 'text-xl font-bold tabular-nums text-navy' : 'text-sm font-bold text-ink'}`}>
+        {value}
       </span>
-      <button type="button" className="text-xs font-medium text-brand" onClick={onEdit}>
+    </div>
+  );
+}
+
+function ScheduleBanner({
+  schedule,
+  className = '',
+}: {
+  schedule: ReturnType<typeof formatPickupRecapParts>;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center gap-2 rounded-xl border border-taxi/25 bg-taxi/10 px-3 py-2.5 text-sm ${className}`}>
+      <CalendarDays className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+      <span className="min-w-0 truncate font-medium text-navy">{schedule.dateLabel}</span>
+      <span className="text-muted" aria-hidden>
+        ·
+      </span>
+      <Clock className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+      <span className="min-w-0 truncate font-semibold tabular-nums text-navy">{schedule.timeLabel}</span>
+    </div>
+  );
+}
+
+function RecapField({
+  label,
+  value,
+  onEdit,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  onEdit: () => void;
+  icon?: typeof User;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+          {Icon ? <Icon className="h-3.5 w-3.5" aria-hidden /> : null}
+          {label}
+        </span>
+        <span className="mt-1 block text-base font-semibold leading-snug text-ink">{value}</span>
+      </div>
+      <button type="button" className="shrink-0 text-xs font-semibold text-brand underline-offset-2 hover:underline" onClick={onEdit}>
         Modifier
       </button>
-    </li>
+    </div>
   );
 }
 
